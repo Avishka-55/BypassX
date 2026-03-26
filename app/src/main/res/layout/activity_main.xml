@@ -328,6 +328,16 @@
                 android:textColor="@color/text_primary"
                 app:backgroundTint="@color/card_selected_background" />
 
+            <TextView
+                android:id="@+id/ping_ip_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:text="@string/ping_ip_idle"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="0dp"

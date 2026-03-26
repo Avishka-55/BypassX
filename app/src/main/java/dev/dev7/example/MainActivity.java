@@ -14,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Base64;
 import android.view.Menu;
@@ -34,13 +35,11 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
+import java.net.Proxy;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -52,6 +51,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.json.JSONObject;
 
 import dev.dev7.lib.v2ray.V2rayController;
 import dev.dev7.lib.v2ray.utils.V2rayConfigs;
@@ -68,6 +69,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_PROXY_TETHERING_ENABLED = "proxy_tethering_enabled";
     private static final String PREF_SPLIT_TUNNEL_ENABLED = "split_tunnel_enabled";
     private static final String PREF_SPLIT_TUNNEL_APPS = "split_tunnel_apps";
+    private static final String DELAY_TEST_URL_PRIMARY = "https://www.gstatic.com/generate_204";
+    private static final String DELAY_TEST_URL_FALLBACK = "https://www.google.com/generate_204";
+    private static final String IP_INFO_URL = "https://api.ip.sb/geoip";
+    private static final String LOCAL_PROXY_HOST = "127.0.0.1";
+    private static final int LOCAL_SOCKS_PORT = 10808;
+    private static final int NETWORK_TIMEOUT_MS = 6000;
 
     private final Map<String, String> packageConfigs = new HashMap<>();
     private final Map<String, MaterialCardView> packageCards = new HashMap<>();
@@ -83,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
 
     private MaterialButton connectButton;
     private MaterialButton pingButton;
+    private TextView pingIpStatus;
     private TextView connectionStatus;
     private TextView subscriptionStatus;
     private TextView parsedPackagesDebug;
@@ -123,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
 
         connectButton = findViewById(R.id.btn_connection);
         pingButton = findViewById(R.id.btn_ping);
+        pingIpStatus = findViewById(R.id.ping_ip_status);
         connectionStatus = findViewById(R.id.connection_status);
         subscriptionStatus = findViewById(R.id.subscription_status);
         parsedPackagesDebug = findViewById(R.id.parsed_packages_debug);
@@ -498,58 +507,129 @@ public class MainActivity extends AppCompatActivity {
     private void onPingButtonClick() {
         if (V2rayController.getConnectionState() != V2rayConstants.CONNECTION_STATES.CONNECTED) {
             pingButton.setText(R.string.ping_connect_first);
+            pingIpStatus.setText(R.string.ping_ip_connect_first);
             return;
         }
 
         pingButton.setEnabled(false);
         pingButton.setText(R.string.ping_loading);
+        pingIpStatus.setText(R.string.ping_ip_loading);
         executorService.execute(() -> {
             PingResult result = runPingCheck();
             runOnUiThread(() -> {
                 pingButton.setEnabled(true);
                 if (result.success) {
                     pingButton.setText(getString(R.string.ping_success, result.latencyMs));
+                    pingIpStatus.setText(getString(R.string.ping_ip_value, result.publicIp));
                 } else {
                     pingButton.setText(R.string.ping_failed);
+                    pingIpStatus.setText(R.string.ping_ip_failed);
                 }
             });
         });
     }
 
     private PingResult runPingCheck() {
-        try {
-            Process process = new ProcessBuilder("ping", "-c", "4", "8.8.8.8")
-                    .redirectErrorStream(true)
-                    .start();
-            String parsedMs = null;
-            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = outputReader.readLine()) != null) {
-                    int markerIndex = line.indexOf("time=");
-                    if (markerIndex >= 0) {
-                        String timePart = line.substring(markerIndex + 5).trim();
-                        int msIndex = timePart.indexOf(" ms");
-                        if (msIndex > 0) {
-                            parsedMs = timePart.substring(0, msIndex).trim();
-                        }
-                    }
-                }
-            }
-            int exitCode = process.waitFor();
-            if (exitCode == 0) {
-                return new PingResult(true, parsedMs != null ? parsedMs : "0");
-            }
-        } catch (Exception ignored) {
+        long latencyMs = measureProxyHttpDelay(DELAY_TEST_URL_PRIMARY);
+        if (latencyMs < 0) {
+            latencyMs = measureProxyHttpDelay(DELAY_TEST_URL_FALLBACK);
+        }
+        if (latencyMs < 0) {
+            return new PingResult(false, "0", "-");
         }
 
-        try {
-            long start = System.currentTimeMillis();
-            boolean reachable = InetAddress.getByName("8.8.8.8").isReachable(3000);
-            long latency = Math.max(System.currentTimeMillis() - start, 1);
-            return new PingResult(reachable, String.valueOf(latency));
-        } catch (Exception ignored) {
-            return new PingResult(false, "0");
+        String publicIp = fetchPublicIpThroughProxy();
+        if (publicIp == null || publicIp.trim().isEmpty()) {
+            publicIp = "-";
         }
+        return new PingResult(true, String.valueOf(latencyMs), publicIp);
+    }
+
+    private long measureProxyHttpDelay(String testUrl) {
+        HttpURLConnection connection = null;
+        try {
+            Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(LOCAL_PROXY_HOST, LOCAL_SOCKS_PORT));
+            URL url = new URL(testUrl);
+            connection = (HttpURLConnection) url.openConnection(proxy);
+            connection.setConnectTimeout(NETWORK_TIMEOUT_MS);
+            connection.setReadTimeout(NETWORK_TIMEOUT_MS);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Connection", "close");
+
+            long start = SystemClock.elapsedRealtime();
+            int code = connection.getResponseCode();
+            long elapsed = Math.max(SystemClock.elapsedRealtime() - start, 1L);
+
+            if (code == 204 || (code == 200 && connection.getContentLengthLong() == 0L)) {
+                return elapsed;
+            }
+            return -1L;
+        } catch (Exception ignored) {
+            return -1L;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private String fetchPublicIpThroughProxy() {
+        HttpURLConnection connection = null;
+        try {
+            Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(LOCAL_PROXY_HOST, LOCAL_SOCKS_PORT));
+            URL url = new URL(IP_INFO_URL);
+            connection = (HttpURLConnection) url.openConnection(proxy);
+            connection.setConnectTimeout(NETWORK_TIMEOUT_MS);
+            connection.setReadTimeout(NETWORK_TIMEOUT_MS);
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Connection", "close");
+            connection.setRequestProperty("Accept", "application/json");
+
+            if (connection.getResponseCode() < 200 || connection.getResponseCode() >= 300) {
+                return null;
+            }
+
+            try (InputStream inputStream = connection.getInputStream()) {
+                byte[] bytes = readFully(inputStream);
+                String json = new String(bytes);
+                JSONObject jsonObject = new JSONObject(json);
+                String ip = firstNonEmpty(
+                        jsonObject.optString("ip", ""),
+                        jsonObject.optString("client_ip", ""),
+                        jsonObject.optString("ip_addr", ""),
+                        jsonObject.optString("query", "")
+                );
+                return ip == null ? null : ip.trim();
+            }
+        } catch (Exception ignored) {
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private byte[] readFully(InputStream inputStream) throws Exception {
+        java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, read);
+        }
+        return outputStream.toByteArray();
+    }
+
+    private String firstNonEmpty(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private void setupPackageCards() {
@@ -908,6 +988,7 @@ public class MainActivity extends AppCompatActivity {
                 connectionStatus.setText(R.string.not_connected);
                 connectionStatus.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
                 pingButton.setText(R.string.ping);
+                pingIpStatus.setText(R.string.ping_ip_idle);
                 pingButton.setEnabled(true);
                 break;
         }
@@ -958,10 +1039,12 @@ public class MainActivity extends AppCompatActivity {
     private static final class PingResult {
         private final boolean success;
         private final String latencyMs;
+        private final String publicIp;
 
-        private PingResult(boolean success, String latencyMs) {
+        private PingResult(boolean success, String latencyMs, String publicIp) {
             this.success = success;
             this.latencyMs = latencyMs;
+            this.publicIp = publicIp;
         }
     }
 }
