@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
@@ -173,7 +172,6 @@ public class BypassXTileService extends TileService {
         }
 
         tile.setLabel(getString(R.string.qs_tile_label));
-        tile.setIcon(Icon.createWithResource(this, R.drawable.ic_qs_vpn));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             tile.setSubtitle(getSubtitleForState(state));
         }
