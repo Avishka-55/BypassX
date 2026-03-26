@@ -176,6 +176,10 @@ public class BypassXTileService extends TileService {
             tile.setSubtitle(getSubtitleForState(state));
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            tile.setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_vpn));
+        }
+
         switch (state) {
             case CONNECTED:
                 tile.setState(Tile.STATE_ACTIVE);
