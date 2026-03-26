@@ -120,5 +120,6 @@ The app uses the custom `BypassX.png` logo asset as the launcher icon and brandi
 - This project uses a foreground VPN service and requires the appropriate Android VPN permissions.
 - Traffic statistics in the notification bar are disabled in the current build for a cleaner experience.
 - The project is intended as a functional sample and starting point for further development.
+-This project for Education purpose Only.
 
 
