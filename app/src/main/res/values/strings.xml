@@ -1,0 +1,122 @@
+<resources>
+    <string name="app_name">BypassX</string>
+    <string name="app_tagline">Secure Network Client</string>
+    <string name="select_package">Select package</string>
+    <string name="loading_packages">Loading packages...</string>
+    <string name="packages_loaded">Loaded %1$d packages</string>
+    <string name="packages_loaded_cached">Loaded %1$d cached packages</string>
+    <string name="parsed_packages_none">Parsed packages: none</string>
+    <string name="parsed_packages_format">Parsed packages: %1$s</string>
+    <string name="last_sync_never">Last sync: never</string>
+    <string name="last_sync_format">Last sync: %1$s</string>
+    <string name="error_load_packages">Could not load packages, check connection</string>
+    <string name="error_select_package_first">Please select a package first</string>
+    <string name="connect">Power</string>
+    <string name="ping">Ping</string>
+    <string name="ping_idle">Ping: -</string>
+    <string name="ping_loading">Pinging...</string>
+    <string name="ping_connect_first">Connect first!</string>
+    <string name="ping_success">Ping: %1$sms ✅</string>
+    <string name="ping_failed">Ping failed ❌</string>
+    <string name="not_connected">Not Connected</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connected">Connected ✓</string>
+    <string name="package_youtube">YouTube</string>
+    <string name="package_youtube_revanced">YouTube Revanced</string>
+    <string name="package_zoom">Zoom</string>
+    <string name="package_whatsapp">WhatsApp</string>
+    <string name="package_viber">Viber</string>
+    <string name="package_netflix">Netflix</string>
+    <string name="package_instagram">Instagram</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_about">About</string>
+    <string name="menu_contact">Contact</string>
+    <string name="menu_proxy_tethering">Proxy Tethering</string>
+    <string name="menu_split_tunnel">Split Tunnel</string>
+    <string name="menu_share">Share</string>
+    <string name="about_title">About BypassX</string>
+    <string name="about_message">App Name: BypassX
+Version: 1.0.0
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+BypassX is a fast, secure and lightweight
+personal network client built for seamless
+connectivity.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+📦 Version        1.0.0
+🤖 Android        8.0+
+🔒 Protocol       VLESS/TLS
+⚡ Core           Xray Core
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+🛠 Developer
+BypassX Team
+
+📞 Support
+Available on WhatsApp
+wa.me/94759106855
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+© 2026 BypassX. All rights reserved.
+Powered by Xray Core</string>
+    <string name="about_logo_desc">BypassX logo</string>
+    <string name="about_name">BypassX</string>
+    <string name="about_version">Version 1.0.0</string>
+    <string name="about_intro">BypassX is a fast, secure and lightweight personal network client built for seamless connectivity.</string>
+    <string name="about_specs">Version: 1.0.0
+Android: 8.0+
+Protocol: VLESS/TLS
+Core: Xray Core</string>
+    <string name="about_developer">Developer
+BypassX Team</string>
+    <string name="about_support">Support
+Available on WhatsApp
+wa.me/94759106855</string>
+    <string name="about_footer">© 2026 BypassX. All rights reserved.
+Powered by Xray Core</string>
+    <string name="about_nav_subtitle">Secure private connectivity</string>
+    <string name="coming_soon">Coming soon!</string>
+    <string name="whatsapp_not_found">WhatsApp is not installed</string>
+    <string name="proxy_tethering_title">Proxy Tethering</string>
+    <string name="proxy_tethering_enable">Enable proxy tethering mode</string>
+    <string name="proxy_tethering_open_hotspot_settings">Open hotspot settings</string>
+    <string name="proxy_tethering_show_guide">Show guide</string>
+    <string name="proxy_tethering_close">Close</string>
+    <string name="proxy_tethering_guide">Guide:\n1) Turn ON Wi-Fi hotspot first.\n2) Enable Proxy Tethering mode.\n3) Start connection from the main screen.\n4) On client device, set manual proxy to Host + Port shown in logs.\n5) Keep BypassX running while sharing.</string>
+    <string name="proxy_tethering_log_header">[Proxy Tethering Console]</string>
+    <string name="proxy_tethering_enabled">Proxy tethering enabled.</string>
+    <string name="proxy_tethering_disabled">Proxy tethering disabled.</string>
+    <string name="proxy_tethering_mode_proxy">Service mode set: PROXY_MODE</string>
+    <string name="proxy_tethering_mode_vpn">Service mode set: VPN_MODE</string>
+    <string name="proxy_tethering_log_host">Host: %1$s</string>
+    <string name="proxy_tethering_log_socks">SOCKS5 port: %1$d</string>
+    <string name="proxy_tethering_log_http">HTTP port: %1$d</string>
+    <string name="proxy_tethering_log_start_hint">Start from main button to launch service.</string>
+    <string name="proxy_tethering_hotspot_note">Hotspot must be turned on manually due Android restrictions.</string>
+    <string name="proxy_tethering_settings_unavailable">Could not open hotspot settings.</string>
+    <string name="proxy_tethering_live_title">[Live Status]</string>
+    <string name="proxy_tethering_log_time">Time: %1$s</string>
+    <string name="proxy_tethering_log_state">Connection state: %1$s</string>
+    <string name="proxy_tethering_log_mode">Service mode: %1$s</string>
+    <string name="proxy_tethering_events_title">[Events]</string>
+    <string name="proxy_tethering_bind_all_interfaces">Applied bind address 0.0.0.0 for hotspot clients.</string>
+    <string name="split_tunnel_title">Split Tunnel</string>
+    <string name="split_tunnel_enable">Enable split tunnel</string>
+    <string name="split_tunnel_description">Exclude selected apps from VPN (use direct internet)</string>
+    <string name="split_tunnel_select_apps">Select apps to bypass</string>
+    <string name="split_tunnel_applied">Split tunnel enabled with %1$d apps excluded</string>
+    <string name="split_tunnel_no_apps">No apps selected for bypass</string>
+    <string name="qs_tile_label">BypassX VPN</string>
+    <string name="qs_tile_state_connected">Connected</string>
+    <string name="qs_tile_state_connecting">Connecting</string>
+    <string name="qs_tile_state_disconnected">Disconnected</string>
+    <string name="qs_tile_select_package_required">Select a package in BypassX first.</string>
+    <string name="qs_tile_config_missing">Load packages in BypassX before using tile.</string>
+    <string name="qs_tile_permission_required">Grant VPN permission once in app to use tile.</string>
+    <string name="qs_tile_failed_to_start">Could not start VPN from tile.</string>
+</resources>

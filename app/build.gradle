@@ -1,0 +1,61 @@
+plugins {
+    id 'com.android.application'
+}
+
+def loadEnvVariables() {
+    def envFile = new File(rootDir, '.env')
+    def envVars = [:]
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            if (line && !line.startsWith('#')) {
+                def (key, value) = line.split('=', 2)
+                if (value) {
+                    envVars[key.trim()] = value.trim()
+                }
+            }
+        }
+    }
+    return envVars
+}
+
+def envVars = loadEnvVariables()
+
+android {
+    namespace 'com.bypassx.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.bypassx.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 11
+        versionName "8.1823"
+        setProperty("archivesBaseName", rootProject.name + "-" + versionName)
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a"
+        }
+        buildConfigField "String", "SUBSCRIPTION_URL", "\"${envVars.get('SUBSCRIPTION_URL', '')}\""
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    buildFeatures {
+        buildConfig = true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation project(path: ':v2ray')
+}
