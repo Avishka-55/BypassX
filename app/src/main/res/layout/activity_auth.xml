@@ -54,6 +54,16 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
+            <TextView
+                android:id="@+id/auth_register_step_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -177,6 +187,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:hint="@string/auth_otp_hint"
+                android:visibility="gone"
                 app:boxBackgroundColor="@color/card_selected_background"
                 app:boxStrokeColor="@color/accent_cyan"
                 app:hintTextColor="@color/text_secondary">
@@ -203,6 +214,18 @@
                 app:strokeColor="@color/accent_cyan" />
 
             <com.google.android.material.button.MaterialButton
+                android:id="@+id/auth_edit_register_details_button"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/auth_edit_details_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:visibility="gone"
+                app:strokeColor="@color/accent_cyan" />
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/auth_submit_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -210,6 +233,7 @@
                 android:text="@string/auth_login_button"
                 android:textAllCaps="false"
                 android:textColor="@color/text_primary"
+                android:visibility="gone"
                 app:backgroundTint="@color/accent_cyan" />
 
             <ProgressBar

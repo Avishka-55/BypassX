@@ -41,16 +41,19 @@ public class AuthActivity extends AppCompatActivity {
     private MaterialButton loginToggleButton;
     private MaterialButton registerToggleButton;
     private MaterialButton sendOtpButton;
+    private MaterialButton editRegisterDetailsButton;
     private MaterialButton submitButton;
     private MaterialButton checkStatusButton;
     private TextView switchHintText;
     private TextView authStatusText;
+    private TextView registerStepText;
     private ProgressBar authProgress;
 
     private ExecutorService executorService;
     private String pendingEmail = "";
     private String pendingPassword = "";
     private String lastOtpRequestedEmail = "";
+    private boolean isRegisterOtpStep = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,10 +88,12 @@ public class AuthActivity extends AppCompatActivity {
         loginToggleButton = findViewById(R.id.auth_toggle_login);
         registerToggleButton = findViewById(R.id.auth_toggle_register);
         sendOtpButton = findViewById(R.id.auth_send_otp_button);
+        editRegisterDetailsButton = findViewById(R.id.auth_edit_register_details_button);
         submitButton = findViewById(R.id.auth_submit_button);
         checkStatusButton = findViewById(R.id.auth_check_status_button);
         switchHintText = findViewById(R.id.auth_switch_hint);
         authStatusText = findViewById(R.id.auth_status_text);
+        registerStepText = findViewById(R.id.auth_register_step_text);
         authProgress = findViewById(R.id.auth_progress);
         checkStatusButton.setVisibility(View.GONE);
     }
@@ -101,15 +106,21 @@ public class AuthActivity extends AppCompatActivity {
 
         registerToggleButton.setOnClickListener(v -> {
             currentMode = Mode.REGISTER;
+            isRegisterOtpStep = false;
             updateModeUi();
         });
 
         submitButton.setOnClickListener(v -> submitAuth());
         sendOtpButton.setOnClickListener(v -> sendRegisterOtp());
+        editRegisterDetailsButton.setOnClickListener(v -> {
+            isRegisterOtpStep = false;
+            updateModeUi();
+        });
         checkStatusButton.setOnClickListener(v -> checkPendingStatus());
 
         switchHintText.setOnClickListener(v -> {
             currentMode = currentMode == Mode.LOGIN ? Mode.REGISTER : Mode.LOGIN;
+            isRegisterOtpStep = false;
             clearPendingState();
             updateModeUi();
         });
@@ -118,16 +129,27 @@ public class AuthActivity extends AppCompatActivity {
     private void updateModeUi() {
         boolean registerMode = currentMode == Mode.REGISTER;
 
-        nameInputLayout.setVisibility(registerMode ? View.VISIBLE : View.GONE);
-        confirmPasswordInputLayout.setVisibility(registerMode ? View.VISIBLE : View.GONE);
-        otpInputLayout.setVisibility(registerMode ? View.VISIBLE : View.GONE);
-        sendOtpButton.setVisibility(registerMode ? View.VISIBLE : View.GONE);
+        boolean showRegisterDetails = registerMode && !isRegisterOtpStep;
+        boolean showRegisterOtpStep = registerMode && isRegisterOtpStep;
+
+        nameInputLayout.setVisibility(showRegisterDetails ? View.VISIBLE : View.GONE);
+        emailInputLayout.setVisibility((registerMode && isRegisterOtpStep) ? View.GONE : View.VISIBLE);
+        passwordInputLayout.setVisibility((registerMode && isRegisterOtpStep) ? View.GONE : View.VISIBLE);
+        confirmPasswordInputLayout.setVisibility(showRegisterDetails ? View.VISIBLE : View.GONE);
+        otpInputLayout.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
+        sendOtpButton.setVisibility(showRegisterDetails ? View.VISIBLE : View.GONE);
+        editRegisterDetailsButton.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
+        registerStepText.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
+        if (showRegisterOtpStep) {
+            registerStepText.setText(getString(R.string.auth_register_step_verify_format, emailForStepText()));
+        }
 
         loginToggleButton.setStrokeWidth(registerMode ? 0 : dpToPx(2));
         registerToggleButton.setStrokeWidth(registerMode ? dpToPx(2) : 0);
 
         submitButton.setText(registerMode ? R.string.auth_register_button : R.string.auth_login_button);
         switchHintText.setText(registerMode ? R.string.auth_switch_to_login : R.string.auth_switch_to_register);
+        submitButton.setVisibility(registerMode ? (showRegisterOtpStep ? View.VISIBLE : View.GONE) : View.VISIBLE);
         authStatusText.setText("");
     }
 
@@ -162,6 +184,11 @@ public class AuthActivity extends AppCompatActivity {
 
         if (currentMode == Mode.REGISTER && !password.equals(confirmPassword)) {
             confirmPasswordInputLayout.setError(getString(R.string.auth_error_password_mismatch));
+            return;
+        }
+
+        if (currentMode == Mode.REGISTER && !isRegisterOtpStep) {
+            authStatusText.setText(R.string.auth_send_code_first);
             return;
         }
 
@@ -215,6 +242,7 @@ public class AuthActivity extends AppCompatActivity {
         authProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
         submitButton.setEnabled(!loading);
         sendOtpButton.setEnabled(!loading);
+        editRegisterDetailsButton.setEnabled(!loading);
         loginToggleButton.setEnabled(!loading);
         registerToggleButton.setEnabled(!loading);
         checkStatusButton.setEnabled(!loading);
@@ -241,6 +269,30 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
+        final String name = text(nameInput);
+        final String password = text(passwordInput);
+        final String confirmPassword = text(confirmPasswordInput);
+
+        if (name.isEmpty()) {
+            nameInputLayout.setError(getString(R.string.auth_error_name_required));
+            return;
+        }
+
+        if (password.isEmpty()) {
+            passwordInputLayout.setError(getString(R.string.auth_error_password_required));
+            return;
+        }
+
+        if (password.length() < 6) {
+            passwordInputLayout.setError(getString(R.string.auth_error_password_short));
+            return;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            confirmPasswordInputLayout.setError(getString(R.string.auth_error_password_mismatch));
+            return;
+        }
+
         setLoadingState(true);
         executorService.execute(() -> {
             AuthApiClient.AuthResponse response = AuthApiClient.sendRegisterOtp(email);
@@ -252,10 +304,24 @@ public class AuthActivity extends AppCompatActivity {
                 }
 
                 lastOtpRequestedEmail = email;
+                isRegisterOtpStep = true;
+                otpInput.setText("");
+                updateModeUi();
                 authStatusText.setText(getString(R.string.auth_otp_sent));
                 Toast.makeText(this, R.string.auth_otp_sent, Toast.LENGTH_SHORT).show();
             });
         });
+    }
+
+    private String emailForStepText() {
+        String email = text(emailInput);
+        if (!email.isEmpty()) {
+            return email;
+        }
+        if (!lastOtpRequestedEmail.isEmpty()) {
+            return lastOtpRequestedEmail;
+        }
+        return getString(R.string.auth_email_hint);
     }
 
     private void showPendingState(String email, String password, String message) {

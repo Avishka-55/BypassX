@@ -221,25 +221,29 @@ export const register = async (req, res) => {
     const approveLink = `${baseUrl}/api/auth/approval-action?token=${encodeURIComponent(approveToken)}`;
     const rejectLink = `${baseUrl}/api/auth/approval-action?token=${encodeURIComponent(rejectToken)}`;
 
-    await sendEmail({
-      toEmail: ADMIN_APPROVAL_EMAIL,
-      toName: 'BypassX Admin',
-      subject: `Approval request: ${user.email}`,
-      htmlContent: buildAdminApprovalHtml({
-        name: user.name,
-        email: user.email,
-        approveLink,
-        rejectLink
-      })
-    });
+    try {
+      await sendEmail({
+        toEmail: ADMIN_APPROVAL_EMAIL,
+        toName: 'BypassX Admin',
+        subject: `Approval request: ${user.email}`,
+        htmlContent: buildAdminApprovalHtml({
+          name: user.name,
+          email: user.email,
+          approveLink,
+          rejectLink
+        })
+      });
 
-    // Send welcome email
-    await sendEmail({
-      toEmail: user.email,
-      toName: user.name,
-      subject: "Registration received",
-      htmlContent: buildUserPendingHtml({ name: user.name })
-    });
+      // Send welcome email
+      await sendEmail({
+        toEmail: user.email,
+        toName: user.name,
+        subject: "Registration received",
+        htmlContent: buildUserPendingHtml({ name: user.name })
+      });
+    } catch (mailError) {
+      console.error('Registration created, but notification email failed:', mailError.message);
+    }
 
     return res.status(201).json({
       success: true,
