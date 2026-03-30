@@ -145,4 +145,6 @@ Powered by Xray Core</string>
     <string name="auth_success">Authentication successful</string>
     <string name="auth_login_required">Please login to use BypassX</string>
     <string name="auth_backend_format">Backend: %1$s</string>
+    <string name="auth_check_status_button">Check Status</string>
+    <string name="auth_account_active_login_now">Your account is active. Please login now.</string>
 </resources>

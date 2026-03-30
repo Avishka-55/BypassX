@@ -50,9 +50,6 @@ export const register = async (req, res) => {
     const user = new userModel({ name, email, password: hashedPassword });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.cookie('token', token, buildAuthCookieOptions());
-
     // Send welcome email
     await sendEmail({
       toEmail: user.email,
@@ -65,9 +62,8 @@ export const register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      token,
-      user: { _id: user._id, name: user.name, email: user.email, isAccountVerified: user.isAccountVerified }
+      status: user.status,
+      message: "Your registration is pending approval"
     });
 
   } catch (error) {
@@ -85,6 +81,11 @@ export const login = async (req, res) => {
     const user = await userModel.findOne({ email });
     if (!user) return res.json({ success: false, message: 'Invalid Email or Password' });
 
+    const accountStatus = user.status || 'active';
+    if (accountStatus !== 'active') {
+      return res.json({ success: false, status: 'pending', message: 'Your registration is pending approval' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.json({ success: false, message: 'Invalid Email or Password' });
 
@@ -93,6 +94,30 @@ export const login = async (req, res) => {
 
     return res.json({ success: true, message: 'Logged in successfully', token, user: { _id: user._id, name: user.name, email: user.email, isAccountVerified: user.isAccountVerified } });
 
+  } catch (error) {
+    return res.json({ success: false, message: error.message });
+  }
+};
+
+// CHECK ACCOUNT STATUS BY EMAIL
+export const checkAccountStatus = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.json({ success: false, message: 'Email is required' });
+  }
+
+  try {
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+
+    const status = user.status || 'active';
+    return res.json({
+      success: true,
+      status,
+      message: status === 'active' ? 'Your account is active' : 'Your registration is pending approval'
+    });
   } catch (error) {
     return res.json({ success: false, message: error.message });
   }

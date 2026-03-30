@@ -192,6 +192,19 @@
                 android:textColor="@color/icon_youtube"
                 android:textSize="13sp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/auth_check_status_button"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:text="@string/auth_check_status_button"
+                android:textAllCaps="false"
+                android:textColor="@color/text_primary"
+                android:visibility="gone"
+                app:strokeColor="@color/accent_cyan" />
+
             <TextView
                 android:id="@+id/auth_switch_hint"
                 android:layout_width="match_parent"

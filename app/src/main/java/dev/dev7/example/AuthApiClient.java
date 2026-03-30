@@ -42,6 +42,16 @@ public final class AuthApiClient {
         }
     }
 
+    public static AuthResponse checkStatus(String email) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("email", email);
+            return post("/api/auth/check-status", body);
+        } catch (Exception e) {
+            return AuthResponse.error("Status check failed");
+        }
+    }
+
     private static AuthResponse post(String path, JSONObject body) {
         HttpURLConnection connection = null;
         try {
@@ -87,6 +97,15 @@ public final class AuthApiClient {
             }
             boolean success = json.optBoolean("success", false);
             String message = json.optString("message", success ? "Success" : "Request failed");
+            String status = json.optString("status", "").toLowerCase();
+
+            if ("pending".equals(status)) {
+                return AuthResponse.pending(message);
+            }
+
+            if ("active".equals(status) && path.endsWith("/check-status")) {
+                return AuthResponse.active(message);
+            }
 
             if (!success) {
                 return AuthResponse.error(message);
@@ -141,21 +160,31 @@ public final class AuthApiClient {
         public final String token;
         public final String name;
         public final String email;
+        public final String status;
 
-        private AuthResponse(boolean success, String message, String token, String name, String email) {
+        private AuthResponse(boolean success, String message, String token, String name, String email, String status) {
             this.success = success;
             this.message = message;
             this.token = token;
             this.name = name;
             this.email = email;
+            this.status = status;
         }
 
         public static AuthResponse success(String message, String token, String name, String email) {
-            return new AuthResponse(true, message, token, name, email);
+            return new AuthResponse(true, message, token, name, email, "active");
+        }
+
+        public static AuthResponse pending(String message) {
+            return new AuthResponse(false, message, "", "", "", "pending");
+        }
+
+        public static AuthResponse active(String message) {
+            return new AuthResponse(true, message, "", "", "", "active");
         }
 
         public static AuthResponse error(String message) {
-            return new AuthResponse(false, message, "", "", "");
+            return new AuthResponse(false, message, "", "", "", "");
         }
     }
 }

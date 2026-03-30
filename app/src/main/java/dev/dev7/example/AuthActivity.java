@@ -39,12 +39,15 @@ public class AuthActivity extends AppCompatActivity {
     private MaterialButton loginToggleButton;
     private MaterialButton registerToggleButton;
     private MaterialButton submitButton;
+    private MaterialButton checkStatusButton;
     private TextView switchHintText;
     private TextView authStatusText;
     private TextView authBackendInfoText;
     private ProgressBar authProgress;
 
     private ExecutorService executorService;
+    private String pendingEmail = "";
+    private String pendingPassword = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,11 +80,13 @@ public class AuthActivity extends AppCompatActivity {
         loginToggleButton = findViewById(R.id.auth_toggle_login);
         registerToggleButton = findViewById(R.id.auth_toggle_register);
         submitButton = findViewById(R.id.auth_submit_button);
+        checkStatusButton = findViewById(R.id.auth_check_status_button);
         switchHintText = findViewById(R.id.auth_switch_hint);
         authStatusText = findViewById(R.id.auth_status_text);
         authBackendInfoText = findViewById(R.id.auth_backend_info);
         authProgress = findViewById(R.id.auth_progress);
         authBackendInfoText.setText(getString(R.string.auth_backend_format, BuildConfig.AUTH_BASE_URL));
+        checkStatusButton.setVisibility(View.GONE);
     }
 
     private void setupListeners() {
@@ -96,9 +101,11 @@ public class AuthActivity extends AppCompatActivity {
         });
 
         submitButton.setOnClickListener(v -> submitAuth());
+        checkStatusButton.setOnClickListener(v -> checkPendingStatus());
 
         switchHintText.setOnClickListener(v -> {
             currentMode = currentMode == Mode.LOGIN ? Mode.REGISTER : Mode.LOGIN;
+            clearPendingState();
             updateModeUi();
         });
     }
@@ -162,6 +169,11 @@ public class AuthActivity extends AppCompatActivity {
 
             runOnUiThread(() -> {
                 setLoadingState(false);
+                String pendingStatus = response.status == null ? "" : response.status;
+                if ("pending".equalsIgnoreCase(pendingStatus)) {
+                    showPendingState(email, password, response.message);
+                    return;
+                }
                 if (!response.success) {
                     authStatusText.setText(response.message);
                     return;
@@ -179,6 +191,7 @@ public class AuthActivity extends AppCompatActivity {
         submitButton.setEnabled(!loading);
         loginToggleButton.setEnabled(!loading);
         registerToggleButton.setEnabled(!loading);
+        checkStatusButton.setEnabled(!loading);
     }
 
     private void clearFieldErrors() {
@@ -187,6 +200,68 @@ public class AuthActivity extends AppCompatActivity {
         passwordInputLayout.setError(null);
         confirmPasswordInputLayout.setError(null);
         authStatusText.setText("");
+    }
+
+    private void showPendingState(String email, String password, String message) {
+        pendingEmail = email;
+        pendingPassword = password;
+        authStatusText.setText(message);
+        checkStatusButton.setVisibility(View.VISIBLE);
+    }
+
+    private void clearPendingState() {
+        pendingEmail = "";
+        pendingPassword = "";
+        checkStatusButton.setVisibility(View.GONE);
+    }
+
+    private void checkPendingStatus() {
+        final String email = !pendingEmail.isEmpty() ? pendingEmail : text(emailInput);
+        if (email.isEmpty()) {
+            authStatusText.setText(R.string.auth_error_email_required);
+            return;
+        }
+
+        setLoadingState(true);
+        executorService.execute(() -> {
+            AuthApiClient.AuthResponse statusResponse = AuthApiClient.checkStatus(email);
+            runOnUiThread(() -> {
+                if (!statusResponse.success && !"pending".equalsIgnoreCase(statusResponse.status)) {
+                    setLoadingState(false);
+                    authStatusText.setText(statusResponse.message);
+                    return;
+                }
+
+                if ("pending".equalsIgnoreCase(statusResponse.status)) {
+                    setLoadingState(false);
+                    authStatusText.setText(statusResponse.message);
+                    checkStatusButton.setVisibility(View.VISIBLE);
+                    return;
+                }
+
+                final String password = !pendingPassword.isEmpty() ? pendingPassword : text(passwordInput);
+                if (password.isEmpty()) {
+                    setLoadingState(false);
+                    authStatusText.setText(R.string.auth_account_active_login_now);
+                    clearPendingState();
+                    currentMode = Mode.LOGIN;
+                    updateModeUi();
+                    return;
+                }
+
+                AuthApiClient.AuthResponse loginResponse = AuthApiClient.login(email, password);
+                setLoadingState(false);
+                if (!loginResponse.success) {
+                    authStatusText.setText(loginResponse.message);
+                    return;
+                }
+
+                clearPendingState();
+                AuthSessionManager.saveSession(this, loginResponse.token, loginResponse.name, loginResponse.email);
+                Toast.makeText(this, R.string.auth_success, Toast.LENGTH_SHORT).show();
+                openMainAndFinish();
+            });
+        });
     }
 
     private String text(TextInputEditText editText) {
