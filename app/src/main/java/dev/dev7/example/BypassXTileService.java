@@ -69,6 +69,12 @@ public class BypassXTileService extends TileService {
     @Override
     public void onClick() {
         super.onClick();
+        if (!AuthSessionManager.hasSession(this)) {
+            Toast.makeText(this, R.string.auth_login_required, Toast.LENGTH_SHORT).show();
+            openAuthActivityAndCollapse();
+            return;
+        }
+
         if (isVpnServiceRunning()) {
             V2rayController.stopV2ray(this);
             updateTileState(V2rayConstants.CONNECTION_STATES.DISCONNECTED);
@@ -154,6 +160,24 @@ public class BypassXTileService extends TileService {
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     this,
                     1001,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+            startActivityAndCollapse(pendingIntent);
+            return;
+        }
+
+        startActivityAndCollapse(intent);
+    }
+
+    private void openAuthActivityAndCollapse() {
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this,
+                    1002,
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );

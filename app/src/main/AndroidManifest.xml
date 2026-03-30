@@ -22,6 +22,9 @@
             android:exported="false" />
         <activity
             android:name="com.bypassx.app.MainActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.bypassx.app.AuthActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

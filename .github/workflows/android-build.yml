@@ -40,8 +40,10 @@ jobs:
       - name: Create .env from secrets
         run: |
           echo "SUBSCRIPTION_URL=${{ secrets.SUBSCRIPTION_URL }}" > .env
+          echo "AUTH_BASE_URL=${{ secrets.AUTH_BASE_URL }}" >> .env
         env:
           SUBSCRIPTION_URL: ${{ secrets.SUBSCRIPTION_URL }}
+          AUTH_BASE_URL: ${{ secrets.AUTH_BASE_URL }}
 
       - name: Assemble Debug APK
         run: ./gradlew :app:assembleDebug

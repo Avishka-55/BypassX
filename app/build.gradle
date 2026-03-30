@@ -35,6 +35,7 @@ android {
             abiFilters "armeabi-v7a", "arm64-v8a"
         }
         buildConfigField "String", "SUBSCRIPTION_URL", "\"${envVars.get('SUBSCRIPTION_URL', '')}\""
+        buildConfigField "String", "AUTH_BASE_URL", "\"${envVars.get('AUTH_BASE_URL', '')}\""
     }
 
     buildTypes {

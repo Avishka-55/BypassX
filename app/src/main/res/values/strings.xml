@@ -124,4 +124,24 @@ Powered by Xray Core</string>
     <string name="qs_tile_config_missing">Load packages in BypassX before using tile.</string>
     <string name="qs_tile_permission_required">Grant VPN permission once in app to use tile.</string>
     <string name="qs_tile_failed_to_start">Could not start VPN from tile.</string>
+
+    <string name="auth_title">Welcome to BypassX</string>
+    <string name="auth_subtitle">Sign in or create an account to continue</string>
+    <string name="auth_mode_login">Login</string>
+    <string name="auth_mode_register">Register</string>
+    <string name="auth_name_hint">Full name</string>
+    <string name="auth_email_hint">Email address</string>
+    <string name="auth_password_hint">Password</string>
+    <string name="auth_confirm_password_hint">Confirm password</string>
+    <string name="auth_login_button">Login</string>
+    <string name="auth_register_button">Create Account</string>
+    <string name="auth_switch_to_register">No account? Tap to register</string>
+    <string name="auth_switch_to_login">Already registered? Tap to login</string>
+    <string name="auth_error_name_required">Name is required</string>
+    <string name="auth_error_email_required">Email is required</string>
+    <string name="auth_error_password_required">Password is required</string>
+    <string name="auth_error_password_short">Password must be at least 6 characters</string>
+    <string name="auth_error_password_mismatch">Passwords do not match</string>
+    <string name="auth_success">Authentication successful</string>
+    <string name="auth_login_required">Please login to use BypassX</string>
 </resources>
