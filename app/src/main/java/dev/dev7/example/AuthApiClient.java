@@ -128,6 +128,10 @@ public final class AuthApiClient {
                 return AuthResponse.error(message);
             }
 
+            if (path.endsWith("/send-register-otp")) {
+                return AuthResponse.info(message);
+            }
+
             String token = json.optString("token", "");
             JSONObject user = json.optJSONObject("user");
             if (token.isEmpty() || user == null) {
@@ -210,6 +214,10 @@ public final class AuthApiClient {
 
         public static AuthResponse error(String message, String status) {
             return new AuthResponse(false, message, "", "", "", status == null ? "" : status);
+        }
+
+        public static AuthResponse info(String message) {
+            return new AuthResponse(true, message, "", "", "", "");
         }
     }
 }
