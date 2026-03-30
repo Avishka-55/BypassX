@@ -32,18 +32,39 @@ export const getSubscriptionStatus = async (req, res) => {
             return res.json({ success: false, message: "User not Found" });
         }
 
-        let totalBytes = Math.max(0, Number(user.quotaBytes || 0));
+        const parseNonNegative = (value, fallback = 0) => {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+        };
+
+        let totalBytes = parseNonNegative(user.quotaBytes, 0);
         let usedBytes = 0;
-        let expiryAt = Math.max(0, Number(user.xuiExpiryAt || 0));
+        let expiryAt = parseNonNegative(user.xuiExpiryAt, 0);
 
         if (user.xuiClientEmail && isXuiConfigured()) {
             try {
                 const traffic = await getXuiClientTrafficByEmail(user.xuiClientEmail);
                 if (traffic) {
-                    totalBytes = Math.max(0, Number(traffic.total || totalBytes || 0));
-                    usedBytes = Math.max(0, Number(traffic.allTime || (Number(traffic.up || 0) + Number(traffic.down || 0))));
-                    if (Number(traffic.expiryTime || 0) > 0) {
-                        expiryAt = Number(traffic.expiryTime);
+                    if (traffic.total !== undefined && traffic.total !== null && traffic.total !== '') {
+                        totalBytes = parseNonNegative(traffic.total, totalBytes);
+                    }
+
+                    if (traffic.allTime !== undefined && traffic.allTime !== null && traffic.allTime !== '') {
+                        usedBytes = parseNonNegative(traffic.allTime, usedBytes);
+                    } else {
+                        const up = parseNonNegative(traffic.up, 0);
+                        const down = parseNonNegative(traffic.down, 0);
+                        usedBytes = up + down;
+                    }
+
+                    if (traffic.expiryTime !== undefined && traffic.expiryTime !== null && traffic.expiryTime !== '') {
+                        expiryAt = parseNonNegative(traffic.expiryTime, expiryAt);
+                    }
+
+                    if (user.quotaBytes !== totalBytes || user.xuiExpiryAt !== expiryAt) {
+                        user.quotaBytes = totalBytes;
+                        user.xuiExpiryAt = expiryAt;
+                        await user.save();
                     }
                 }
             } catch (error) {
