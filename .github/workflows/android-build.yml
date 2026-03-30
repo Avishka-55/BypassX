@@ -45,6 +45,25 @@ jobs:
           SUBSCRIPTION_URL: ${{ secrets.SUBSCRIPTION_URL }}
           AUTH_BASE_URL: ${{ secrets.AUTH_BASE_URL }}
 
+      - name: Create backend .env from secrets
+        run: |
+          mkdir -p backend-mern-auth-main
+          {
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}"
+            echo "MONGODB_URL=${{ secrets.MONGODB_URL }}"
+            echo "BREVO_API_KEY=${{ secrets.BREVO_API_KEY }}"
+            echo "SENDER_EMAIL=${{ secrets.SENDER_EMAIL }}"
+            echo "ADMIN_APPROVAL_EMAIL=${{ secrets.ADMIN_APPROVAL_EMAIL }}"
+            echo "XUI_PANEL_URL=${{ secrets.XUI_PANEL_URL }}"
+            echo "XUI_USERNAME=${{ secrets.XUI_USERNAME }}"
+            echo "XUI_PASSWORD=${{ secrets.XUI_PASSWORD }}"
+            echo "XUI_INBOUND_ID=${{ secrets.XUI_INBOUND_ID }}"
+            echo "XUI_DEFAULT_QUOTA_GB=${{ secrets.XUI_DEFAULT_QUOTA_GB }}"
+            echo "XUI_DEFAULT_EXPIRY_DAYS=${{ secrets.XUI_DEFAULT_EXPIRY_DAYS }}"
+            echo "XUI_SUB_PATH=${{ secrets.XUI_SUB_PATH }}"
+            echo "XUI_SUB_URI=${{ secrets.XUI_SUB_URI }}"
+          } > backend-mern-auth-main/.env
+
       - name: Assemble Debug APK
         run: ./gradlew :app:assembleDebug
 
