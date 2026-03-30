@@ -145,13 +145,4 @@ Powered by Xray Core</string>
     <string name="auth_success">Authentication successful</string>
     <string name="auth_login_required">Please login to use BypassX</string>
     <string name="auth_backend_format">Backend: %1$s</string>
-    <string name="auth_backend_default_format">Backend (default): %1$s</string>
-    <string name="auth_backend_override_format">Backend (override): %1$s</string>
-    <string name="auth_backend_url_hint">Backend URL override (testing)</string>
-    <string name="auth_backend_apply">Apply URL</string>
-    <string name="auth_backend_reset_button">Use Default</string>
-    <string name="auth_backend_url_required">Please enter backend URL</string>
-    <string name="auth_backend_url_invalid">URL must start with http:// or https://</string>
-    <string name="auth_backend_applied">Backend URL override applied</string>
-    <string name="auth_backend_reset">Switched back to default backend URL</string>
 </resources>

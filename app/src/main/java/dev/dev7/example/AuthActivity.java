@@ -30,19 +30,15 @@ public class AuthActivity extends AppCompatActivity {
     private TextInputLayout emailInputLayout;
     private TextInputLayout passwordInputLayout;
     private TextInputLayout confirmPasswordInputLayout;
-    private TextInputLayout backendUrlInputLayout;
 
     private TextInputEditText nameInput;
     private TextInputEditText emailInput;
     private TextInputEditText passwordInput;
     private TextInputEditText confirmPasswordInput;
-    private TextInputEditText backendUrlInput;
 
     private MaterialButton loginToggleButton;
     private MaterialButton registerToggleButton;
     private MaterialButton submitButton;
-    private MaterialButton applyBackendButton;
-    private MaterialButton resetBackendButton;
     private TextView switchHintText;
     private TextView authStatusText;
     private TextView authBackendInfoText;
@@ -72,29 +68,20 @@ public class AuthActivity extends AppCompatActivity {
         emailInputLayout = findViewById(R.id.auth_email_layout);
         passwordInputLayout = findViewById(R.id.auth_password_layout);
         confirmPasswordInputLayout = findViewById(R.id.auth_confirm_password_layout);
-        backendUrlInputLayout = findViewById(R.id.auth_backend_url_layout);
 
         nameInput = findViewById(R.id.auth_name_input);
         emailInput = findViewById(R.id.auth_email_input);
         passwordInput = findViewById(R.id.auth_password_input);
         confirmPasswordInput = findViewById(R.id.auth_confirm_password_input);
-        backendUrlInput = findViewById(R.id.auth_backend_url_input);
 
         loginToggleButton = findViewById(R.id.auth_toggle_login);
         registerToggleButton = findViewById(R.id.auth_toggle_register);
         submitButton = findViewById(R.id.auth_submit_button);
-        applyBackendButton = findViewById(R.id.auth_apply_backend_button);
-        resetBackendButton = findViewById(R.id.auth_reset_backend_button);
         switchHintText = findViewById(R.id.auth_switch_hint);
         authStatusText = findViewById(R.id.auth_status_text);
         authBackendInfoText = findViewById(R.id.auth_backend_info);
         authProgress = findViewById(R.id.auth_progress);
-
-        String overrideUrl = AuthEndpointManager.getOverrideUrl(this);
-        if (!overrideUrl.isEmpty()) {
-            backendUrlInput.setText(overrideUrl);
-        }
-        refreshBackendInfoText();
+        authBackendInfoText.setText(getString(R.string.auth_backend_format, BuildConfig.AUTH_BASE_URL));
     }
 
     private void setupListeners() {
@@ -109,8 +96,6 @@ public class AuthActivity extends AppCompatActivity {
         });
 
         submitButton.setOnClickListener(v -> submitAuth());
-        applyBackendButton.setOnClickListener(v -> applyBackendOverride());
-        resetBackendButton.setOnClickListener(v -> resetBackendOverride());
 
         switchHintText.setOnClickListener(v -> {
             currentMode = currentMode == Mode.LOGIN ? Mode.REGISTER : Mode.LOGIN;
@@ -170,9 +155,9 @@ public class AuthActivity extends AppCompatActivity {
         executorService.execute(() -> {
             AuthApiClient.AuthResponse response;
             if (currentMode == Mode.REGISTER) {
-                response = AuthApiClient.register(this, name, email, password);
+                response = AuthApiClient.register(name, email, password);
             } else {
-                response = AuthApiClient.login(this, email, password);
+                response = AuthApiClient.login(email, password);
             }
 
             runOnUiThread(() -> {
@@ -194,8 +179,6 @@ public class AuthActivity extends AppCompatActivity {
         submitButton.setEnabled(!loading);
         loginToggleButton.setEnabled(!loading);
         registerToggleButton.setEnabled(!loading);
-        applyBackendButton.setEnabled(!loading);
-        resetBackendButton.setEnabled(!loading);
     }
 
     private void clearFieldErrors() {
@@ -204,41 +187,6 @@ public class AuthActivity extends AppCompatActivity {
         passwordInputLayout.setError(null);
         confirmPasswordInputLayout.setError(null);
         authStatusText.setText("");
-    }
-
-    private void applyBackendOverride() {
-        backendUrlInputLayout.setError(null);
-        String url = text(backendUrlInput);
-        if (TextUtils.isEmpty(url)) {
-            backendUrlInputLayout.setError(getString(R.string.auth_backend_url_required));
-            return;
-        }
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            backendUrlInputLayout.setError(getString(R.string.auth_backend_url_invalid));
-            return;
-        }
-
-        AuthEndpointManager.setOverrideUrl(this, url);
-        refreshBackendInfoText();
-        authStatusText.setText(R.string.auth_backend_applied);
-    }
-
-    private void resetBackendOverride() {
-        backendUrlInputLayout.setError(null);
-        AuthEndpointManager.clearOverrideUrl(this);
-        backendUrlInput.setText("");
-        refreshBackendInfoText();
-        authStatusText.setText(R.string.auth_backend_reset);
-    }
-
-    private void refreshBackendInfoText() {
-        String effective = AuthEndpointManager.getEffectiveBaseUrl(this);
-        String override = AuthEndpointManager.getOverrideUrl(this);
-        if (override.isEmpty()) {
-            authBackendInfoText.setText(getString(R.string.auth_backend_default_format, effective));
-        } else {
-            authBackendInfoText.setText(getString(R.string.auth_backend_override_format, effective));
-        }
     }
 
     private String text(TextInputEditText editText) {

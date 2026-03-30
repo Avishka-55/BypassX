@@ -1,7 +1,5 @@
 package com.bypassx.app;
 
-import android.content.Context;
-
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -21,38 +19,38 @@ public final class AuthApiClient {
     private AuthApiClient() {
     }
 
-    public static AuthResponse login(Context context, String email, String password) {
+    public static AuthResponse login(String email, String password) {
         try {
             JSONObject body = new JSONObject();
             body.put("email", email);
             body.put("password", password);
-            return post(context, "/api/auth/login", body);
+            return post("/api/auth/login", body);
         } catch (Exception e) {
             return AuthResponse.error("Login failed");
         }
     }
 
-    public static AuthResponse register(Context context, String name, String email, String password) {
+    public static AuthResponse register(String name, String email, String password) {
         try {
             JSONObject body = new JSONObject();
             body.put("name", name);
             body.put("email", email);
             body.put("password", password);
-            return post(context, "/api/auth/register", body);
+            return post("/api/auth/register", body);
         } catch (Exception e) {
             return AuthResponse.error("Registration failed");
         }
     }
 
-    private static AuthResponse post(Context context, String path, JSONObject body) {
+    private static AuthResponse post(String path, JSONObject body) {
         HttpURLConnection connection = null;
         try {
-            String baseUrl = sanitizeBaseUrl(AuthEndpointManager.getEffectiveBaseUrl(context));
+            String baseUrl = sanitizeBaseUrl(BuildConfig.AUTH_BASE_URL);
             if (baseUrl.isEmpty()) {
-                return AuthResponse.error("Backend URL is not configured");
+                return AuthResponse.error("AUTH_BASE_URL is not configured");
             }
             if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-                return AuthResponse.error("Backend URL must start with http:// or https://");
+                return AuthResponse.error("AUTH_BASE_URL must start with http:// or https://");
             }
 
             URL url = new URL(baseUrl + path);
