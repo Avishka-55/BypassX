@@ -42,7 +42,6 @@ public class AuthActivity extends AppCompatActivity {
     private MaterialButton checkStatusButton;
     private TextView switchHintText;
     private TextView authStatusText;
-    private TextView authBackendInfoText;
     private ProgressBar authProgress;
 
     private ExecutorService executorService;
@@ -83,9 +82,7 @@ public class AuthActivity extends AppCompatActivity {
         checkStatusButton = findViewById(R.id.auth_check_status_button);
         switchHintText = findViewById(R.id.auth_switch_hint);
         authStatusText = findViewById(R.id.auth_status_text);
-        authBackendInfoText = findViewById(R.id.auth_backend_info);
         authProgress = findViewById(R.id.auth_progress);
-        authBackendInfoText.setText(getString(R.string.auth_backend_format, BuildConfig.AUTH_BASE_URL));
         checkStatusButton.setVisibility(View.GONE);
     }
 
