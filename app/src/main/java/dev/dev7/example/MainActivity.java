@@ -174,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
         fetchSubscriptionConfigs();
+        validateAccountStatus(true);
     }
 
     private void validateAccountStatus(boolean force) {
@@ -208,9 +209,22 @@ public class MainActivity extends AppCompatActivity {
                 if ("active".equalsIgnoreCase(status)) {
                     return;
                 }
-                if ("pending".equalsIgnoreCase(status) || "rejected".equalsIgnoreCase(status)) {
+                if ("pending".equalsIgnoreCase(status)
+                        || "rejected".equalsIgnoreCase(status)
+                        || "not_found".equalsIgnoreCase(status)
+                        || "invalid".equalsIgnoreCase(status)) {
                     AuthSessionManager.clear(this);
                     redirectToAuthAndFinish(response.message);
+                    return;
+                }
+
+                // If backend sends a non-status error for revoked users, fail closed on explicit not-found message.
+                if (!response.success) {
+                    String message = response.message == null ? "" : response.message.toLowerCase(Locale.US);
+                    if (message.contains("not found") || message.contains("no longer exists")) {
+                        AuthSessionManager.clear(this);
+                        redirectToAuthAndFinish(response.message);
+                    }
                 }
             });
         });

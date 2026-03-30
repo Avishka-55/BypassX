@@ -4,6 +4,7 @@ import userModel from '../models/userModel.js';
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
+const SENDER_NAME = 'Avishka';
 const ADMIN_APPROVAL_EMAIL = process.env.ADMIN_APPROVAL_EMAIL || SENDER_EMAIL;
 
 const buildAuthCookieOptions = () => ({
@@ -28,6 +29,93 @@ const createApprovalToken = (userId, nextStatus) => {
   );
 };
 
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const buildEmailLayout = ({ preheader, title, intro, bodyHtml, footerNote = 'If you did not expect this email, you can ignore it.' }) => `
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#10243a;">
+  <span style="display:none!important;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">${escapeHtml(preheader)}</span>
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f4f7fb;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="640" style="max-width:640px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #d8e2ee;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f4c81,#0b9ecf);padding:18px 24px;color:#ffffff;">
+              <div style="font-size:22px;font-weight:700;letter-spacing:0.2px;">BypassX</div>
+              <div style="font-size:12px;opacity:0.9;margin-top:3px;">Secure access updates</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:26px 24px 20px 24px;">
+              <h1 style="margin:0 0 10px 0;font-size:24px;line-height:1.3;color:#0f2741;">${escapeHtml(title)}</h1>
+              <p style="margin:0 0 14px 0;font-size:14px;line-height:1.6;color:#324b66;">${escapeHtml(intro)}</p>
+              <div style="font-size:14px;line-height:1.7;color:#17324f;">${bodyHtml}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px;background:#f8fbff;border-top:1px solid #e4edf7;font-size:12px;line-height:1.6;color:#526b84;">
+              <div>${escapeHtml(footerNote)}</div>
+              <div style="margin-top:6px;">- ${escapeHtml(SENDER_NAME)}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+const buildAdminApprovalHtml = ({ name, email, approveLink, rejectLink }) => buildEmailLayout({
+  preheader: 'New BypassX registration requires your review',
+  title: 'New Registration Request',
+  intro: 'A user has signed up and is waiting for your approval decision.',
+  bodyHtml: `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f7fafd;border:1px solid #deebf7;border-radius:10px;padding:12px 14px;margin:6px 0 16px 0;">
+      <tr><td style="font-size:13px;color:#4a6178;">Name</td><td style="font-size:14px;font-weight:600;color:#0f2741;">${escapeHtml(name)}</td></tr>
+      <tr><td style="font-size:13px;color:#4a6178;">Email</td><td style="font-size:14px;font-weight:600;color:#0f2741;">${escapeHtml(email)}</td></tr>
+    </table>
+    <p style="margin:0 0 12px 0;">Choose an action below:</p>
+    <a href="${approveLink}" style="display:inline-block;padding:10px 16px;background:#1d8f44;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;">Approve</a>
+    <a href="${rejectLink}" style="display:inline-block;padding:10px 16px;background:#c3383f;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;margin-left:8px;">Reject</a>
+    <p style="margin:14px 0 0 0;color:#5f7388;font-size:12px;">Action links expire in 7 days.</p>`,
+  footerNote: 'This is an admin approval notification from BypassX.'
+});
+
+const buildUserPendingHtml = ({ name }) => buildEmailLayout({
+  preheader: 'Your BypassX registration is pending approval',
+  title: 'Registration Received',
+  intro: `Hi ${name}, we have received your registration request.`,
+  bodyHtml: `
+    <p style="margin:0 0 10px 0;">Your account is currently in <strong>Pending Approval</strong> status.</p>
+    <p style="margin:0;">You will receive another email as soon as your request is approved or rejected.</p>`,
+  footerNote: 'Need help? Contact support if you did not request this registration.'
+});
+
+const buildStatusUpdateHtml = ({ approved }) => buildEmailLayout({
+  preheader: approved ? 'Your BypassX account has been approved' : 'Your BypassX request was rejected',
+  title: approved ? 'Access Approved' : 'Access Request Update',
+  intro: approved
+    ? 'Good news. Your BypassX account is now active.'
+    : 'Your BypassX access request could not be approved at this time.',
+  bodyHtml: approved
+    ? '<p style="margin:0;">You can now open the app and log in with your registered credentials.</p>'
+    : '<p style="margin:0;">Please contact support if you believe this was a mistake or need further details.</p>',
+  footerNote: approved
+    ? 'Welcome to BypassX.'
+    : 'This decision notification was sent by BypassX.'
+});
+
 // Helper to send email via Brevo HTTP API
 const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -37,7 +125,7 @@ const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
       'api-key': BREVO_API_KEY
     },
     body: JSON.stringify({
-      sender: { email: SENDER_EMAIL, name: "Avishka" },
+      sender: { email: SENDER_EMAIL, name: SENDER_NAME },
       to: [{ email: toEmail, name: toName }],
       subject,
       htmlContent
@@ -76,14 +164,12 @@ export const register = async (req, res) => {
       toEmail: ADMIN_APPROVAL_EMAIL,
       toName: 'BypassX Admin',
       subject: `Approval request: ${user.email}`,
-      htmlContent: `<p>A new user is waiting for approval.</p>
-      <p><strong>Name:</strong> ${user.name}<br/><strong>Email:</strong> ${user.email}</p>
-      <p>
-        <a href="${approveLink}" style="padding:10px 14px;background:#1e7e34;color:#fff;text-decoration:none;border-radius:6px;">Approve</a>
-        &nbsp;
-        <a href="${rejectLink}" style="padding:10px 14px;background:#b02a37;color:#fff;text-decoration:none;border-radius:6px;">Reject</a>
-      </p>
-      <p>These links expire in 7 days.</p>`
+      htmlContent: buildAdminApprovalHtml({
+        name: user.name,
+        email: user.email,
+        approveLink,
+        rejectLink
+      })
     });
 
     // Send welcome email
@@ -91,9 +177,7 @@ export const register = async (req, res) => {
       toEmail: user.email,
       toName: user.name,
       subject: "Registration received",
-      htmlContent: `<p>Hi ${user.name},</p>
-      <p>Your registration was received and is currently <strong>pending approval</strong>.</p>
-      <p>We will notify you once your access is approved.</p>`
+      htmlContent: buildUserPendingHtml({ name: user.name })
     });
 
     return res.status(201).json({
@@ -145,13 +229,17 @@ export const login = async (req, res) => {
 export const checkAccountStatus = async (req, res) => {
   const { email } = req.body;
   if (!email) {
-    return res.json({ success: false, message: 'Email is required' });
+    return res.json({ success: false, status: 'invalid', message: 'Email is required' });
   }
 
   try {
     const user = await userModel.findOne({ email });
     if (!user) {
-      return res.json({ success: false, message: 'User not found' });
+      return res.json({
+        success: false,
+        status: 'not_found',
+        message: 'Account no longer exists. Please register again.'
+      });
     }
 
     const status = user.status || 'pending';
@@ -168,7 +256,7 @@ export const checkAccountStatus = async (req, res) => {
       message
     });
   } catch (error) {
-    return res.json({ success: false, message: error.message });
+    return res.json({ success: false, status: 'error', message: 'Unable to check account status' });
   }
 };
 
@@ -197,9 +285,7 @@ export const approvalAction = async (req, res) => {
       toEmail: user.email,
       toName: user.name,
       subject: 'Account status update',
-      htmlContent: nextStatus === 'active'
-        ? '<p>Your BypassX access was approved. You can now log in to the app.</p>'
-        : '<p>Your BypassX access request was rejected. Contact support for details.</p>'
+      htmlContent: buildStatusUpdateHtml({ approved: nextStatus === 'active' })
     });
 
     if (nextStatus === 'active') {
