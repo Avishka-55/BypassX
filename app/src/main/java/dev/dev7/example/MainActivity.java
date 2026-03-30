@@ -217,6 +217,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void redirectToAuthAndFinish(String reason) {
+        V2rayConstants.CONNECTION_STATES state = V2rayController.getConnectionState();
+        if (state == V2rayConstants.CONNECTION_STATES.CONNECTED
+                || state == V2rayConstants.CONNECTION_STATES.CONNECTING) {
+            V2rayController.stopV2ray(this);
+        }
+
         if (reason != null && !reason.trim().isEmpty()) {
             Toast.makeText(this, reason, Toast.LENGTH_LONG).show();
         }
