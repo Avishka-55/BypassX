@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOCAL_PROXY_HOST = "127.0.0.1";
     private static final int LOCAL_SOCKS_PORT = 10808;
     private static final int NETWORK_TIMEOUT_MS = 6000;
+    private static final long STATUS_CHECK_INTERVAL_MS = 30000L;
 
     private final Map<String, String> packageConfigs = new HashMap<>();
     private final Map<String, MaterialCardView> packageCards = new HashMap<>();
@@ -90,6 +91,8 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver v2rayBroadcastReceiver;
     private boolean isV2rayReceiverRegistered = false;
     private V2rayConstants.CONNECTION_STATES lastObservedState = null;
+    private long lastStatusCheckAt = 0L;
+    private boolean isStatusCheckInProgress = false;
 
     private MaterialButton connectButton;
     private MaterialButton pingButton;
@@ -126,6 +129,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (!AuthSessionManager.hasSession(this)) {
+            redirectToAuthAndFinish(getString(R.string.auth_login_required));
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         V2rayController.init(this, R.drawable.ic_launcher, getString(R.string.app_name));
@@ -165,6 +174,56 @@ public class MainActivity extends AppCompatActivity {
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
         fetchSubscriptionConfigs();
+    }
+
+    private void validateAccountStatus(boolean force) {
+        if (executorService == null || isStatusCheckInProgress) {
+            return;
+        }
+
+        if (!AuthSessionManager.hasSession(this)) {
+            redirectToAuthAndFinish(getString(R.string.auth_login_required));
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (!force && (now - lastStatusCheckAt) < STATUS_CHECK_INTERVAL_MS) {
+            return;
+        }
+        lastStatusCheckAt = now;
+        isStatusCheckInProgress = true;
+
+        final String email = AuthSessionManager.getUserEmail(this);
+        if (email == null || email.trim().isEmpty()) {
+            isStatusCheckInProgress = false;
+            redirectToAuthAndFinish(getString(R.string.auth_session_invalid));
+            return;
+        }
+
+        executorService.execute(() -> {
+            AuthApiClient.AuthResponse response = AuthApiClient.checkStatus(email);
+            runOnUiThread(() -> {
+                isStatusCheckInProgress = false;
+                String status = response.status == null ? "" : response.status;
+                if ("active".equalsIgnoreCase(status)) {
+                    return;
+                }
+                if ("pending".equalsIgnoreCase(status) || "rejected".equalsIgnoreCase(status)) {
+                    AuthSessionManager.clear(this);
+                    redirectToAuthAndFinish(response.message);
+                }
+            });
+        });
+    }
+
+    private void redirectToAuthAndFinish(String reason) {
+        if (reason != null && !reason.trim().isEmpty()) {
+            Toast.makeText(this, reason, Toast.LENGTH_LONG).show();
+        }
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void setupNavigationDrawer() {
@@ -973,6 +1032,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateConnectionUi(V2rayConstants.CONNECTION_STATES state) {
+        V2rayConstants.CONNECTION_STATES previousState = lastObservedState;
         lastObservedState = state;
         switch (state) {
             case CONNECTED:
@@ -996,6 +1056,11 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
             refreshConfigControlLockState();
+
+            if (state == V2rayConstants.CONNECTION_STATES.CONNECTED
+                && previousState != V2rayConstants.CONNECTION_STATES.CONNECTED) {
+                validateAccountStatus(true);
+            }
     }
 
     private int dpToPx(int dpValue) {
