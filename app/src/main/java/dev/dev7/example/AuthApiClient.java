@@ -111,6 +111,9 @@ public final class AuthApiClient {
             }
 
             if (!success) {
+                if (path.endsWith("/check-status")) {
+                    return AuthResponse.error(message, status);
+                }
                 return AuthResponse.error(message);
             }
 
@@ -192,6 +195,10 @@ public final class AuthApiClient {
 
         public static AuthResponse error(String message) {
             return new AuthResponse(false, message, "", "", "", "");
+        }
+
+        public static AuthResponse error(String message, String status) {
+            return new AuthResponse(false, message, "", "", "", status == null ? "" : status);
         }
     }
 }

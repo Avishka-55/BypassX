@@ -217,15 +217,6 @@ public class MainActivity extends AppCompatActivity {
                     redirectToAuthAndFinish(response.message);
                     return;
                 }
-
-                // If backend sends a non-status error for revoked users, fail closed on explicit not-found message.
-                if (!response.success) {
-                    String message = response.message == null ? "" : response.message.toLowerCase(Locale.US);
-                    if (message.contains("not found") || message.contains("no longer exists")) {
-                        AuthSessionManager.clear(this);
-                        redirectToAuthAndFinish(response.message);
-                    }
-                }
             });
         });
     }
