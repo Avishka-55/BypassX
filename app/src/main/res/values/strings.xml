@@ -133,6 +133,8 @@ Powered by Xray Core</string>
     <string name="auth_email_hint">Email address</string>
     <string name="auth_password_hint">Password</string>
     <string name="auth_confirm_password_hint">Confirm password</string>
+    <string name="auth_otp_hint">Email verification code</string>
+    <string name="auth_send_otp_button">Send Code</string>
     <string name="auth_login_button">Login</string>
     <string name="auth_register_button">Create Account</string>
     <string name="auth_switch_to_register">No account? Tap to register</string>
@@ -142,6 +144,10 @@ Powered by Xray Core</string>
     <string name="auth_error_password_required">Password is required</string>
     <string name="auth_error_password_short">Password must be at least 6 characters</string>
     <string name="auth_error_password_mismatch">Passwords do not match</string>
+    <string name="auth_error_otp_required">Verification code is required</string>
+    <string name="auth_error_otp_invalid">Verification code must be 6 digits</string>
+    <string name="auth_error_otp_email_changed">Email changed. Tap Send Code again for this email.</string>
+    <string name="auth_otp_sent">Verification code sent. Check your email.</string>
     <string name="auth_success">Authentication successful</string>
     <string name="auth_login_required">Please login to use BypassX</string>
     <string name="auth_session_invalid">Session invalid. Please login again.</string>

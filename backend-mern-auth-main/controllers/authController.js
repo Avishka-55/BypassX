@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import userModel from '../models/userModel.js';
+import registerOtpModel from '../models/registerOtpModel.js';
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
@@ -116,6 +117,17 @@ const buildStatusUpdateHtml = ({ approved }) => buildEmailLayout({
     : 'This decision notification was sent by BypassX.'
 });
 
+const buildRegisterOtpHtml = ({ otp }) => buildEmailLayout({
+  preheader: 'Your BypassX registration verification code',
+  title: 'Email Verification Code',
+  intro: 'Use the one-time code below to complete your account registration.',
+  bodyHtml: `
+    <div style="display:inline-block;padding:12px 16px;background:#f0f6ff;border:1px dashed #86a9cf;border-radius:10px;font-size:28px;letter-spacing:6px;font-weight:700;color:#0f2741;">${escapeHtml(otp)}</div>
+    <p style="margin:14px 0 0 0;">This code is valid for <strong>10 minutes</strong>.</p>
+    <p style="margin:8px 0 0 0;">If you did not request this, you can safely ignore this email.</p>`,
+  footerNote: 'For security reasons, never share this code with anyone.'
+});
+
 // Helper to send email via Brevo HTTP API
 const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -140,19 +152,35 @@ const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
 
 // REGISTER USER
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password)
-    return res.status(400).json({ success: false, message: "Missing Details" });
+  const { name, email, password, otp } = req.body;
+  if (!name || !email || !password || !otp)
+    return res.status(400).json({ success: false, message: "Missing details or verification code" });
 
   try {
-    const existingUser = await userModel.findOne({ email });
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existingUser = await userModel.findOne({ email: normalizedEmail });
     if (existingUser)
       return res.status(400).json({ success: false, message: "User already exists" });
 
+    const otpRecord = await registerOtpModel.findOne({ email: normalizedEmail });
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: 'Verification code not requested. Tap Send Code first.' });
+    }
+
+    if (otpRecord.expiresAt < Date.now()) {
+      await registerOtpModel.deleteOne({ email: normalizedEmail });
+      return res.status(400).json({ success: false, message: 'Verification code expired. Please request a new code.' });
+    }
+
+    if (String(otpRecord.otp).trim() !== String(otp).trim()) {
+      return res.status(400).json({ success: false, message: 'Invalid verification code' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new userModel({ name, email, password: hashedPassword });
+    const user = new userModel({ name, email: normalizedEmail, password: hashedPassword });
     await user.save();
+    await registerOtpModel.deleteOne({ email: normalizedEmail });
 
     const baseUrl = buildPublicBaseUrl(req);
     const approveToken = createApprovalToken(user._id, 'active');
@@ -188,6 +216,46 @@ export const register = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const sendRegisterOtp = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email is required' });
+  }
+
+  try {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: 'Enter a valid email address' });
+    }
+
+    const existingUser = await userModel.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({ success: false, message: 'User already exists. Please login.' });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    await registerOtpModel.findOneAndUpdate(
+      { email: normalizedEmail },
+      { email: normalizedEmail, otp, expiresAt },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    await sendEmail({
+      toEmail: normalizedEmail,
+      toName: normalizedEmail,
+      subject: 'BypassX registration verification code',
+      htmlContent: buildRegisterOtpHtml({ otp })
+    });
+
+    return res.json({ success: true, message: 'Verification code sent to your email' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to send verification code' });
   }
 };
 

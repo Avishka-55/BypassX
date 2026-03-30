@@ -30,12 +30,23 @@ public final class AuthApiClient {
         }
     }
 
-    public static AuthResponse register(String name, String email, String password) {
+    public static AuthResponse sendRegisterOtp(String email) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("email", email);
+            return post("/api/auth/send-register-otp", body);
+        } catch (Exception e) {
+            return AuthResponse.error("Could not send verification code");
+        }
+    }
+
+    public static AuthResponse register(String name, String email, String password, String otp) {
         try {
             JSONObject body = new JSONObject();
             body.put("name", name);
             body.put("email", email);
             body.put("password", password);
+            body.put("otp", otp);
             return post("/api/auth/register", body);
         } catch (Exception e) {
             return AuthResponse.error("Registration failed");

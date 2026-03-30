@@ -30,14 +30,17 @@ public class AuthActivity extends AppCompatActivity {
     private TextInputLayout emailInputLayout;
     private TextInputLayout passwordInputLayout;
     private TextInputLayout confirmPasswordInputLayout;
+    private TextInputLayout otpInputLayout;
 
     private TextInputEditText nameInput;
     private TextInputEditText emailInput;
     private TextInputEditText passwordInput;
     private TextInputEditText confirmPasswordInput;
+    private TextInputEditText otpInput;
 
     private MaterialButton loginToggleButton;
     private MaterialButton registerToggleButton;
+    private MaterialButton sendOtpButton;
     private MaterialButton submitButton;
     private MaterialButton checkStatusButton;
     private TextView switchHintText;
@@ -47,6 +50,7 @@ public class AuthActivity extends AppCompatActivity {
     private ExecutorService executorService;
     private String pendingEmail = "";
     private String pendingPassword = "";
+    private String lastOtpRequestedEmail = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,14 +74,17 @@ public class AuthActivity extends AppCompatActivity {
         emailInputLayout = findViewById(R.id.auth_email_layout);
         passwordInputLayout = findViewById(R.id.auth_password_layout);
         confirmPasswordInputLayout = findViewById(R.id.auth_confirm_password_layout);
+        otpInputLayout = findViewById(R.id.auth_otp_layout);
 
         nameInput = findViewById(R.id.auth_name_input);
         emailInput = findViewById(R.id.auth_email_input);
         passwordInput = findViewById(R.id.auth_password_input);
         confirmPasswordInput = findViewById(R.id.auth_confirm_password_input);
+        otpInput = findViewById(R.id.auth_otp_input);
 
         loginToggleButton = findViewById(R.id.auth_toggle_login);
         registerToggleButton = findViewById(R.id.auth_toggle_register);
+        sendOtpButton = findViewById(R.id.auth_send_otp_button);
         submitButton = findViewById(R.id.auth_submit_button);
         checkStatusButton = findViewById(R.id.auth_check_status_button);
         switchHintText = findViewById(R.id.auth_switch_hint);
@@ -98,6 +105,7 @@ public class AuthActivity extends AppCompatActivity {
         });
 
         submitButton.setOnClickListener(v -> submitAuth());
+        sendOtpButton.setOnClickListener(v -> sendRegisterOtp());
         checkStatusButton.setOnClickListener(v -> checkPendingStatus());
 
         switchHintText.setOnClickListener(v -> {
@@ -112,6 +120,8 @@ public class AuthActivity extends AppCompatActivity {
 
         nameInputLayout.setVisibility(registerMode ? View.VISIBLE : View.GONE);
         confirmPasswordInputLayout.setVisibility(registerMode ? View.VISIBLE : View.GONE);
+        otpInputLayout.setVisibility(registerMode ? View.VISIBLE : View.GONE);
+        sendOtpButton.setVisibility(registerMode ? View.VISIBLE : View.GONE);
 
         loginToggleButton.setStrokeWidth(registerMode ? 0 : dpToPx(2));
         registerToggleButton.setStrokeWidth(registerMode ? dpToPx(2) : 0);
@@ -128,6 +138,7 @@ public class AuthActivity extends AppCompatActivity {
         String email = text(emailInput);
         String password = text(passwordInput);
         String confirmPassword = text(confirmPasswordInput);
+        String otp = text(otpInput);
 
         if (currentMode == Mode.REGISTER && TextUtils.isEmpty(name)) {
             nameInputLayout.setError(getString(R.string.auth_error_name_required));
@@ -154,12 +165,29 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
 
+        if (currentMode == Mode.REGISTER && TextUtils.isEmpty(otp)) {
+            otpInputLayout.setError(getString(R.string.auth_error_otp_required));
+            return;
+        }
+
+        if (currentMode == Mode.REGISTER && otp.length() != 6) {
+            otpInputLayout.setError(getString(R.string.auth_error_otp_invalid));
+            return;
+        }
+
+        if (currentMode == Mode.REGISTER
+                && !lastOtpRequestedEmail.isEmpty()
+                && !lastOtpRequestedEmail.equalsIgnoreCase(email)) {
+            authStatusText.setText(R.string.auth_error_otp_email_changed);
+            return;
+        }
+
         setLoadingState(true);
 
         executorService.execute(() -> {
             AuthApiClient.AuthResponse response;
             if (currentMode == Mode.REGISTER) {
-                response = AuthApiClient.register(name, email, password);
+                response = AuthApiClient.register(name, email, password, otp);
             } else {
                 response = AuthApiClient.login(email, password);
             }
@@ -186,6 +214,7 @@ public class AuthActivity extends AppCompatActivity {
     private void setLoadingState(boolean loading) {
         authProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
         submitButton.setEnabled(!loading);
+        sendOtpButton.setEnabled(!loading);
         loginToggleButton.setEnabled(!loading);
         registerToggleButton.setEnabled(!loading);
         checkStatusButton.setEnabled(!loading);
@@ -196,7 +225,37 @@ public class AuthActivity extends AppCompatActivity {
         emailInputLayout.setError(null);
         passwordInputLayout.setError(null);
         confirmPasswordInputLayout.setError(null);
+        otpInputLayout.setError(null);
         authStatusText.setText("");
+    }
+
+    private void sendRegisterOtp() {
+        if (currentMode != Mode.REGISTER) {
+            return;
+        }
+
+        clearFieldErrors();
+        final String email = text(emailInput);
+        if (email.isEmpty()) {
+            emailInputLayout.setError(getString(R.string.auth_error_email_required));
+            return;
+        }
+
+        setLoadingState(true);
+        executorService.execute(() -> {
+            AuthApiClient.AuthResponse response = AuthApiClient.sendRegisterOtp(email);
+            runOnUiThread(() -> {
+                setLoadingState(false);
+                if (!response.success) {
+                    authStatusText.setText(response.message);
+                    return;
+                }
+
+                lastOtpRequestedEmail = email;
+                authStatusText.setText(getString(R.string.auth_otp_sent));
+                Toast.makeText(this, R.string.auth_otp_sent, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     private void showPendingState(String email, String password, String message) {
