@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import userModel from '../models/userModel.js';
 import registerOtpModel from '../models/registerOtpModel.js';
 
@@ -150,6 +151,8 @@ const toSafeOtpSendErrorMessage = (rawMessage = '') => {
   return toSafeMailErrorMessage(rawMessage);
 };
 
+const isDatabaseConnected = () => mongoose.connection && mongoose.connection.readyState === 1;
+
 // Helper to send email via Brevo HTTP API
 const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
   if (!BREVO_API_KEY || !SENDER_EMAIL) {
@@ -181,6 +184,10 @@ export const register = async (req, res) => {
   const { name, email, password, otp } = req.body;
   if (!name || !email || !password || !otp)
     return res.status(400).json({ success: false, message: "Missing details or verification code" });
+
+  if (!isDatabaseConnected()) {
+    return res.status(503).json({ success: false, message: 'Database unavailable right now. Please try again shortly.' });
+  }
 
   try {
     const normalizedEmail = String(email).trim().toLowerCase();
@@ -249,6 +256,10 @@ export const sendRegisterOtp = async (req, res) => {
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ success: false, message: 'Email is required' });
+  }
+
+  if (!isDatabaseConnected()) {
+    return res.status(503).json({ success: false, message: 'Database unavailable right now. Please try again shortly.' });
   }
 
   try {
