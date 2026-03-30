@@ -217,6 +217,7 @@ public class AuthActivity extends AppCompatActivity {
 
     private void checkPendingStatus() {
         final String email = !pendingEmail.isEmpty() ? pendingEmail : text(emailInput);
+        final String fallbackPassword = text(passwordInput);
         if (email.isEmpty()) {
             authStatusText.setText(R.string.auth_error_email_required);
             return;
@@ -225,38 +226,47 @@ public class AuthActivity extends AppCompatActivity {
         setLoadingState(true);
         executorService.execute(() -> {
             AuthApiClient.AuthResponse statusResponse = AuthApiClient.checkStatus(email);
-            runOnUiThread(() -> {
-                if (!statusResponse.success && !"pending".equalsIgnoreCase(statusResponse.status)) {
+
+            if (!statusResponse.success && !"pending".equalsIgnoreCase(statusResponse.status)) {
+                runOnUiThread(() -> {
                     setLoadingState(false);
                     authStatusText.setText(statusResponse.message);
-                    return;
-                }
+                });
+                return;
+            }
 
-                if ("pending".equalsIgnoreCase(statusResponse.status)) {
+            if ("pending".equalsIgnoreCase(statusResponse.status)) {
+                runOnUiThread(() -> {
                     setLoadingState(false);
                     authStatusText.setText(statusResponse.message);
                     checkStatusButton.setVisibility(View.VISIBLE);
-                    return;
-                }
+                });
+                return;
+            }
 
-                if (!"active".equalsIgnoreCase(statusResponse.status)) {
+            if (!"active".equalsIgnoreCase(statusResponse.status)) {
+                runOnUiThread(() -> {
                     setLoadingState(false);
                     clearPendingState();
                     authStatusText.setText(statusResponse.message);
-                    return;
-                }
+                });
+                return;
+            }
 
-                final String password = !pendingPassword.isEmpty() ? pendingPassword : text(passwordInput);
-                if (password.isEmpty()) {
+            final String password = !pendingPassword.isEmpty() ? pendingPassword : fallbackPassword;
+            if (password.isEmpty()) {
+                runOnUiThread(() -> {
                     setLoadingState(false);
                     authStatusText.setText(R.string.auth_account_active_login_now);
                     clearPendingState();
                     currentMode = Mode.LOGIN;
                     updateModeUi();
-                    return;
-                }
+                });
+                return;
+            }
 
-                AuthApiClient.AuthResponse loginResponse = AuthApiClient.login(email, password);
+            AuthApiClient.AuthResponse loginResponse = AuthApiClient.login(email, password);
+            runOnUiThread(() -> {
                 setLoadingState(false);
                 if (!loginResponse.success) {
                     authStatusText.setText(loginResponse.message);
