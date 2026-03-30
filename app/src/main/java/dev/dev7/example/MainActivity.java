@@ -4,6 +4,8 @@ import static dev.dev7.lib.v2ray.utils.V2rayConstants.SERVICE_CONNECTION_STATE_B
 import static dev.dev7.lib.v2ray.utils.V2rayConstants.V2RAY_SERVICE_STATICS_BROADCAST_INTENT;
 
 import android.annotation.SuppressLint;
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -20,6 +22,7 @@ import android.util.Base64;
 import android.text.format.Formatter;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.LinearLayout;
@@ -70,6 +73,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_SUBSCRIPTION_CACHE = "subscription_cache";
     private static final String PREF_SELECTED_PACKAGE_KEY = "selected_package_key";
     private static final String PREF_LAST_SYNC_TIME = "last_sync_time";
+    private static final String PREF_STATUS_CACHE_AVAILABLE = "status_cache_available";
+    private static final String PREF_STATUS_CACHE_UNLIMITED = "status_cache_unlimited";
+    private static final String PREF_STATUS_CACHE_REMAINING = "status_cache_remaining";
+    private static final String PREF_STATUS_CACHE_EXPIRY = "status_cache_expiry";
+    private static final String PREF_STATUS_CACHE_EXPIRED = "status_cache_expired";
     private static final String PREF_PROXY_TETHERING_ENABLED = "proxy_tethering_enabled";
     private static final String PREF_SPLIT_TUNNEL_ENABLED = "split_tunnel_enabled";
     private static final String PREF_SPLIT_TUNNEL_APPS = "split_tunnel_apps";
@@ -112,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
     private NavigationView navigationView;
     private MaterialToolbar topToolbar;
     private ActionBarDrawerToggle drawerToggle;
+    private ObjectAnimator connectGlowAnimator;
     private LinearLayout proxyTetheringDrawer;
     private SwitchMaterial proxyTetheringSwitch;
     private MaterialButton proxyHotspotSettingsButton;
@@ -172,6 +181,8 @@ public class MainActivity extends AppCompatActivity {
         splitTunnelStatus = findViewById(R.id.split_tunnel_status);
 
         initializeAndroidPackageNames();
+        setupGreeting();
+        setupConnectButtonGlow();
         setupNavigationDrawer();
         setupProxyTetheringPanel();
         setupSplitTunnelPanel();
@@ -185,8 +196,43 @@ public class MainActivity extends AppCompatActivity {
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
         fetchSubscriptionConfigs();
+        renderCachedSubscriptionStatus();
         fetchSubscriptionStatus();
         validateAccountStatus(true);
+    }
+
+    private void setupGreeting() {
+        String name = AuthSessionManager.getUserName(this);
+        if (name == null || name.trim().isEmpty()) {
+            topToolbar.setSubtitle(getString(R.string.greeting_default));
+            return;
+        }
+        topToolbar.setSubtitle(getString(R.string.greeting_format, name.trim()));
+    }
+
+    private void setupConnectButtonGlow() {
+        connectGlowAnimator = ObjectAnimator.ofFloat(connectButton, "alpha", 1f, 0.92f, 1f);
+        connectGlowAnimator.setDuration(1600);
+        connectGlowAnimator.setInterpolator(new LinearInterpolator());
+        connectGlowAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        connectGlowAnimator.setRepeatMode(ValueAnimator.RESTART);
+    }
+
+    private void updateConnectButtonGlow(V2rayConstants.CONNECTION_STATES state) {
+        if (connectGlowAnimator == null) {
+            return;
+        }
+        boolean shouldGlow = state == V2rayConstants.CONNECTION_STATES.DISCONNECTED;
+        if (shouldGlow) {
+            if (!connectGlowAnimator.isStarted()) {
+                connectGlowAnimator.start();
+            }
+            return;
+        }
+        if (connectGlowAnimator.isStarted()) {
+            connectGlowAnimator.cancel();
+        }
+        connectButton.setAlpha(1f);
     }
 
     private void validateAccountStatus(boolean force) {
@@ -1154,19 +1200,73 @@ public class MainActivity extends AppCompatActivity {
 
     private void fetchSubscriptionStatus() {
         final String token = AuthSessionManager.getToken(this);
+        SubscriptionStatus cachedStatus = getCachedSubscriptionStatus();
         if (token == null || token.trim().isEmpty()) {
-            remainingDataValue.setText(R.string.subscription_unavailable);
-            expiryDateValue.setText(R.string.subscription_unavailable);
+            if (cachedStatus.available) {
+                renderSubscriptionStatus(cachedStatus);
+            } else {
+                remainingDataValue.setText(R.string.subscription_unavailable);
+                expiryDateValue.setText(R.string.subscription_unavailable);
+            }
             return;
         }
 
-        remainingDataValue.setText(R.string.subscription_loading_value);
-        expiryDateValue.setText(R.string.subscription_loading_value);
+        if (cachedStatus.available) {
+            renderSubscriptionStatus(cachedStatus);
+        } else {
+            remainingDataValue.setText(R.string.subscription_loading_value);
+            expiryDateValue.setText(R.string.subscription_loading_value);
+        }
 
         executorService.execute(() -> {
             SubscriptionStatus status = requestSubscriptionStatus(token);
-            runOnUiThread(() -> renderSubscriptionStatus(status));
+            runOnUiThread(() -> {
+                if (status.available) {
+                    cacheSubscriptionStatus(status);
+                    renderSubscriptionStatus(status);
+                    return;
+                }
+                SubscriptionStatus fallback = getCachedSubscriptionStatus();
+                if (fallback.available) {
+                    renderSubscriptionStatus(fallback);
+                } else {
+                    renderSubscriptionStatus(status);
+                }
+            });
         });
+    }
+
+    private void renderCachedSubscriptionStatus() {
+        SubscriptionStatus cached = getCachedSubscriptionStatus();
+        if (cached.available) {
+            renderSubscriptionStatus(cached);
+        }
+    }
+
+    private SubscriptionStatus getCachedSubscriptionStatus() {
+        boolean available = sharedPreferences.getBoolean(PREF_STATUS_CACHE_AVAILABLE, false);
+        if (!available) {
+            return SubscriptionStatus.unavailable();
+        }
+
+        boolean unlimited = sharedPreferences.getBoolean(PREF_STATUS_CACHE_UNLIMITED, false);
+        long remaining = Math.max(0L, sharedPreferences.getLong(PREF_STATUS_CACHE_REMAINING, 0L));
+        long expiryAt = Math.max(0L, sharedPreferences.getLong(PREF_STATUS_CACHE_EXPIRY, 0L));
+        boolean expired = sharedPreferences.getBoolean(PREF_STATUS_CACHE_EXPIRED, expiryAt > 0 && expiryAt <= System.currentTimeMillis());
+        return new SubscriptionStatus(unlimited, remaining, expiryAt, expired, true);
+    }
+
+    private void cacheSubscriptionStatus(SubscriptionStatus status) {
+        if (status == null || !status.available) {
+            return;
+        }
+        sharedPreferences.edit()
+                .putBoolean(PREF_STATUS_CACHE_AVAILABLE, true)
+                .putBoolean(PREF_STATUS_CACHE_UNLIMITED, status.unlimited)
+                .putLong(PREF_STATUS_CACHE_REMAINING, Math.max(0L, status.remainingBytes))
+                .putLong(PREF_STATUS_CACHE_EXPIRY, Math.max(0L, status.expiryAt))
+                .putBoolean(PREF_STATUS_CACHE_EXPIRED, status.expired)
+                .apply();
     }
 
     private SubscriptionStatus requestSubscriptionStatus(String token) {
@@ -1237,7 +1337,7 @@ public class MainActivity extends AppCompatActivity {
                 expiryDateValue.setText(R.string.subscription_expired);
                 return;
             }
-            String dateText = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+            String dateText = DateFormat.getDateInstance(DateFormat.MEDIUM)
                     .format(new Date(status.expiryAt));
             expiryDateValue.setText(dateText);
         } else {
@@ -1332,6 +1432,7 @@ public class MainActivity extends AppCompatActivity {
                 pingButton.setEnabled(true);
                 break;
         }
+            updateConnectButtonGlow(state);
             refreshConfigControlLockState();
 
             if (state == V2rayConstants.CONNECTION_STATES.CONNECTED
@@ -1357,6 +1458,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterV2rayReceiver();
+        if (connectGlowAnimator != null) {
+            connectGlowAnimator.cancel();
+        }
         if (executorService != null) {
             executorService.shutdownNow();
         }

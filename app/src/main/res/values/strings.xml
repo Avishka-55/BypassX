@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">BypassX</string>
     <string name="app_tagline">Secure Network Client</string>
+    <string name="greeting_default">Hi User</string>
+    <string name="greeting_format">Hi %1$s</string>
     <string name="select_package">Select package</string>
     <string name="package_selector_title">Package</string>
     <string name="package_selector_button">Choose package</string>
