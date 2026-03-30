@@ -128,8 +128,26 @@ const buildRegisterOtpHtml = ({ otp }) => buildEmailLayout({
   footerNote: 'For security reasons, never share this code with anyone.'
 });
 
+const toSafeMailErrorMessage = (rawMessage = '') => {
+  const text = String(rawMessage || '').toLowerCase();
+  if (text.includes('api-key') || text.includes('api key') || text.includes('unauthorized')) {
+    return 'Email service authentication failed. Check BREVO_API_KEY.';
+  }
+  if (text.includes('sender') || text.includes('from') || text.includes('not verified')) {
+    return 'Sender email is not verified in Brevo. Verify SENDER_EMAIL and try again.';
+  }
+  if (text.includes('quota') || text.includes('rate') || text.includes('limit')) {
+    return 'Email sending limit reached. Please try again later.';
+  }
+  return 'Failed to send verification code. Please try again.';
+};
+
 // Helper to send email via Brevo HTTP API
 const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
+  if (!BREVO_API_KEY || !SENDER_EMAIL) {
+    throw new Error('Mail service not configured (BREVO_API_KEY/SENDER_EMAIL missing)');
+  }
+
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -255,7 +273,7 @@ export const sendRegisterOtp = async (req, res) => {
 
     return res.json({ success: true, message: 'Verification code sent to your email' });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Failed to send verification code' });
+    return res.status(500).json({ success: false, message: toSafeMailErrorMessage(error.message) });
   }
 };
 
