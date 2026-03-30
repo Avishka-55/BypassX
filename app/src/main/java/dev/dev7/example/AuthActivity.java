@@ -239,6 +239,13 @@ public class AuthActivity extends AppCompatActivity {
                     return;
                 }
 
+                if (!"active".equalsIgnoreCase(statusResponse.status)) {
+                    setLoadingState(false);
+                    clearPendingState();
+                    authStatusText.setText(statusResponse.message);
+                    return;
+                }
+
                 final String password = !pendingPassword.isEmpty() ? pendingPassword : text(passwordInput);
                 if (password.isEmpty()) {
                     setLoadingState(false);

@@ -102,6 +102,9 @@ public final class AuthApiClient {
             if ("pending".equals(status)) {
                 return AuthResponse.pending(message);
             }
+            if ("rejected".equals(status)) {
+                return AuthResponse.rejected(message);
+            }
 
             if ("active".equals(status) && path.endsWith("/check-status")) {
                 return AuthResponse.active(message);
@@ -181,6 +184,10 @@ public final class AuthApiClient {
 
         public static AuthResponse active(String message) {
             return new AuthResponse(true, message, "", "", "", "active");
+        }
+
+        public static AuthResponse rejected(String message) {
+            return new AuthResponse(false, message, "", "", "", "rejected");
         }
 
         public static AuthResponse error(String message) {

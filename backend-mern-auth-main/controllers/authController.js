@@ -4,6 +4,7 @@ import userModel from '../models/userModel.js';
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
+const ADMIN_APPROVAL_EMAIL = process.env.ADMIN_APPROVAL_EMAIL || SENDER_EMAIL;
 
 const buildAuthCookieOptions = () => ({
   httpOnly: true,
@@ -11,6 +12,21 @@ const buildAuthCookieOptions = () => ({
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
   maxAge: 7 * 24 * 60 * 60 * 1000,
 });
+
+const buildPublicBaseUrl = (req) => {
+  if (process.env.BACKEND_PUBLIC_URL) {
+    return process.env.BACKEND_PUBLIC_URL.replace(/\/+$/, '');
+  }
+  return `${req.protocol}://${req.get('host')}`;
+};
+
+const createApprovalToken = (userId, nextStatus) => {
+  return jwt.sign(
+    { id: userId, type: 'approval', status: nextStatus },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+};
 
 // Helper to send email via Brevo HTTP API
 const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
@@ -50,14 +66,34 @@ export const register = async (req, res) => {
     const user = new userModel({ name, email, password: hashedPassword });
     await user.save();
 
+    const baseUrl = buildPublicBaseUrl(req);
+    const approveToken = createApprovalToken(user._id, 'active');
+    const rejectToken = createApprovalToken(user._id, 'rejected');
+    const approveLink = `${baseUrl}/api/auth/approval-action?token=${encodeURIComponent(approveToken)}`;
+    const rejectLink = `${baseUrl}/api/auth/approval-action?token=${encodeURIComponent(rejectToken)}`;
+
+    await sendEmail({
+      toEmail: ADMIN_APPROVAL_EMAIL,
+      toName: 'BypassX Admin',
+      subject: `Approval request: ${user.email}`,
+      htmlContent: `<p>A new user is waiting for approval.</p>
+      <p><strong>Name:</strong> ${user.name}<br/><strong>Email:</strong> ${user.email}</p>
+      <p>
+        <a href="${approveLink}" style="padding:10px 14px;background:#1e7e34;color:#fff;text-decoration:none;border-radius:6px;">Approve</a>
+        &nbsp;
+        <a href="${rejectLink}" style="padding:10px 14px;background:#b02a37;color:#fff;text-decoration:none;border-radius:6px;">Reject</a>
+      </p>
+      <p>These links expire in 7 days.</p>`
+    });
+
     // Send welcome email
     await sendEmail({
       toEmail: user.email,
       toName: user.name,
-      subject: "Welcome to Mern Auth!",
+      subject: "Registration received",
       htmlContent: `<p>Hi ${user.name},</p>
-      <p>Welcome to <strong>Mern Auth</strong>! Your account has been created successfully.</p>
-      <p>Enjoy exploring our app!</p>`
+      <p>Your registration was received and is currently <strong>pending approval</strong>.</p>
+      <p>We will notify you once your access is approved.</p>`
     });
 
     return res.status(201).json({
@@ -81,9 +117,15 @@ export const login = async (req, res) => {
     const user = await userModel.findOne({ email });
     if (!user) return res.json({ success: false, message: 'Invalid Email or Password' });
 
-    const accountStatus = user.status || 'active';
+    const accountStatus = user.status || 'pending';
     if (accountStatus !== 'active') {
-      return res.json({ success: false, status: 'pending', message: 'Your registration is pending approval' });
+      const pendingMsg = 'Your registration is pending approval';
+      const rejectedMsg = 'Your request was rejected. Contact support for help';
+      return res.json({
+        success: false,
+        status: accountStatus,
+        message: accountStatus === 'rejected' ? rejectedMsg : pendingMsg
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -112,14 +154,60 @@ export const checkAccountStatus = async (req, res) => {
       return res.json({ success: false, message: 'User not found' });
     }
 
-    const status = user.status || 'active';
+    const status = user.status || 'pending';
+    let message = 'Your registration is pending approval';
+    if (status === 'active') {
+      message = 'Your account is active';
+    } else if (status === 'rejected') {
+      message = 'Your request was rejected. Contact support for help';
+    }
+
     return res.json({
       success: true,
       status,
-      message: status === 'active' ? 'Your account is active' : 'Your registration is pending approval'
+      message
     });
   } catch (error) {
     return res.json({ success: false, message: error.message });
+  }
+};
+
+export const approvalAction = async (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(400).send('<h2>Invalid approval link</h2>');
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded || decoded.type !== 'approval' || !decoded.id || !decoded.status) {
+      return res.status(400).send('<h2>Invalid approval link</h2>');
+    }
+
+    const nextStatus = decoded.status === 'active' ? 'active' : 'rejected';
+    const user = await userModel.findById(decoded.id);
+    if (!user) {
+      return res.status(404).send('<h2>User not found</h2>');
+    }
+
+    user.status = nextStatus;
+    await user.save();
+
+    await sendEmail({
+      toEmail: user.email,
+      toName: user.name,
+      subject: 'Account status update',
+      htmlContent: nextStatus === 'active'
+        ? '<p>Your BypassX access was approved. You can now log in to the app.</p>'
+        : '<p>Your BypassX access request was rejected. Contact support for details.</p>'
+    });
+
+    if (nextStatus === 'active') {
+      return res.send('<h2>User approved successfully</h2>');
+    }
+    return res.send('<h2>User rejected successfully</h2>');
+  } catch (error) {
+    return res.status(400).send('<h2>Approval link expired or invalid</h2>');
   }
 };
 
