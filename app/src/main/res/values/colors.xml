@@ -6,6 +6,14 @@
     <color name="text_primary">#F7FBFF</color>
     <color name="text_secondary">#9FB1C8</color>
     <color name="accent_cyan">#35D8E6</color>
+    <color name="overlay_light">#1FFFFFFF</color>
+    <color name="overlay_mid">#14FFFFFF</color>
+    <color name="panel_stroke">#2CE5F9FF</color>
+    <color name="panel_dark">#BF0F1828</color>
+    <color name="panel_dark_soft">#A6162238</color>
+    <color name="glow_teal">#4035D8E6</color>
+    <color name="glow_blue">#30266DFF</color>
+    <color name="connect_ring_stroke">#5DD8F4FF</color>
 
     <color name="icon_youtube">#E53935</color>
     <color name="icon_facebook">#1877F2</color>
