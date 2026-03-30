@@ -37,9 +37,17 @@ export const getSubscriptionStatus = async (req, res) => {
             return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
         };
 
+        const normalizeExpiryMs = (value, fallback = 0) => {
+            let parsed = parseNonNegative(value, fallback);
+            if (parsed > 0 && parsed < 1000000000000) {
+                parsed = parsed * 1000;
+            }
+            return parsed;
+        };
+
         let totalBytes = parseNonNegative(user.quotaBytes, 0);
         let usedBytes = 0;
-        let expiryAt = parseNonNegative(user.xuiExpiryAt, 0);
+        let expiryAt = normalizeExpiryMs(user.xuiExpiryAt, 0);
 
         if (user.xuiClientEmail && isXuiConfigured()) {
             try {
@@ -58,7 +66,7 @@ export const getSubscriptionStatus = async (req, res) => {
                     }
 
                     if (traffic.expiryTime !== undefined && traffic.expiryTime !== null && traffic.expiryTime !== '') {
-                        expiryAt = parseNonNegative(traffic.expiryTime, expiryAt);
+                        expiryAt = normalizeExpiryMs(traffic.expiryTime, expiryAt);
                     }
 
                     if (user.quotaBytes !== totalBytes || user.xuiExpiryAt !== expiryAt) {
@@ -74,6 +82,7 @@ export const getSubscriptionStatus = async (req, res) => {
 
         const unlimited = totalBytes <= 0;
         const remainingBytes = unlimited ? 0 : Math.max(0, totalBytes - usedBytes);
+        const isExpired = expiryAt > 0 && expiryAt <= Date.now();
 
         return res.json({
             success: true,
@@ -83,6 +92,7 @@ export const getSubscriptionStatus = async (req, res) => {
                 remainingBytes,
                 expiryAt,
                 unlimited,
+                isExpired,
             }
         });
     } catch (error) {

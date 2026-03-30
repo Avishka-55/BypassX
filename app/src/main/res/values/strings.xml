@@ -19,6 +19,7 @@
     <string name="subscription_loading_value">Loading...</string>
     <string name="subscription_unlimited">Unlimited</string>
     <string name="subscription_unavailable">Unavailable</string>
+    <string name="subscription_expired">Expired</string>
     <string name="error_load_packages">Could not load packages, check connection</string>
     <string name="error_select_package_first">Please select a package first</string>
     <string name="connect">Power</string>

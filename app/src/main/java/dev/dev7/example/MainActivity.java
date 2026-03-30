@@ -1208,7 +1208,8 @@ public class MainActivity extends AppCompatActivity {
             boolean unlimited = sub.optBoolean("unlimited", false);
             long remaining = sub.optLong("remainingBytes", 0);
             long expiryAt = sub.optLong("expiryAt", 0);
-            return new SubscriptionStatus(unlimited, remaining, expiryAt, true);
+            boolean expired = sub.optBoolean("isExpired", expiryAt > 0 && expiryAt <= System.currentTimeMillis());
+            return new SubscriptionStatus(unlimited, remaining, expiryAt, expired, true);
         } catch (Exception ignored) {
             return SubscriptionStatus.unavailable();
         } finally {
@@ -1232,6 +1233,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (status.expiryAt > 0) {
+            if (status.expired) {
+                expiryDateValue.setText(R.string.subscription_expired);
+                return;
+            }
             String dateText = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
                     .format(new Date(status.expiryAt));
             expiryDateValue.setText(dateText);
@@ -1376,17 +1381,19 @@ public class MainActivity extends AppCompatActivity {
         private final boolean unlimited;
         private final long remainingBytes;
         private final long expiryAt;
+        private final boolean expired;
         private final boolean available;
 
-        private SubscriptionStatus(boolean unlimited, long remainingBytes, long expiryAt, boolean available) {
+        private SubscriptionStatus(boolean unlimited, long remainingBytes, long expiryAt, boolean expired, boolean available) {
             this.unlimited = unlimited;
             this.remainingBytes = remainingBytes;
             this.expiryAt = expiryAt;
+            this.expired = expired;
             this.available = available;
         }
 
         private static SubscriptionStatus unavailable() {
-            return new SubscriptionStatus(false, 0, 0, false);
+            return new SubscriptionStatus(false, 0, 0, false, false);
         }
     }
 
