@@ -48,9 +48,6 @@ app.use(
   })
 )
 
-// database
-connectDB()
-
 app.get('/', (req, res) => {
   res.send('API Working 👌')
 })
@@ -59,4 +56,14 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRouter)
 app.use('/api/user', userRouter)
 
-app.listen(port, () => console.log(`Server running on ${port}`))
+const startServer = async () => {
+  try {
+    await connectDB()
+    app.listen(port, () => console.log(`Server running on ${port}`))
+  } catch (error) {
+    console.error('Server startup aborted: database unavailable')
+    process.exit(1)
+  }
+}
+
+startServer()

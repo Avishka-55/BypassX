@@ -142,6 +142,14 @@ const toSafeMailErrorMessage = (rawMessage = '') => {
   return 'Failed to send verification code. Please try again.';
 };
 
+const toSafeOtpSendErrorMessage = (rawMessage = '') => {
+  const text = String(rawMessage || '').toLowerCase();
+  if (text.includes('buffering timed out') || text.includes('server selection timed out') || text.includes('mongodb')) {
+    return 'Database unavailable right now. Please try again shortly.';
+  }
+  return toSafeMailErrorMessage(rawMessage);
+};
+
 // Helper to send email via Brevo HTTP API
 const sendEmail = async ({ toEmail, toName, subject, htmlContent }) => {
   if (!BREVO_API_KEY || !SENDER_EMAIL) {
@@ -273,7 +281,7 @@ export const sendRegisterOtp = async (req, res) => {
 
     return res.json({ success: true, message: 'Verification code sent to your email' });
   } catch (error) {
-    return res.status(500).json({ success: false, message: toSafeMailErrorMessage(error.message) });
+    return res.status(500).json({ success: false, message: toSafeOtpSendErrorMessage(error.message) });
   }
 };
 
