@@ -40,6 +40,7 @@ public class BypassXTileService extends TileService {
     private static final String PREF_PROXY_TETHERING_ENABLED = "proxy_tethering_enabled";
     private static final String PREF_SPLIT_TUNNEL_ENABLED = "split_tunnel_enabled";
     private static final String PREF_SPLIT_TUNNEL_APPS = "split_tunnel_apps";
+    private static final Map<String, String> PACKAGE_SNI_BY_KEY = createPackageSniMap();
 
     private final Map<String, String> androidPackageNames = new HashMap<>();
     private BroadcastReceiver stateReceiver;
@@ -254,6 +255,7 @@ public class BypassXTileService extends TileService {
     }
 
     private void initializeAndroidPackageNames() {
+        androidPackageNames.put("facebook", "com.facebook.katana");
         androidPackageNames.put("youtube", "com.google.android.youtube");
         androidPackageNames.put("youtube_revanced", "app.revanced.android.youtube");
         androidPackageNames.put("zoom", "us.zoom.videomeetings");
@@ -336,6 +338,9 @@ public class BypassXTileService extends TileService {
             return parsedConfigs;
         }
 
+        List<String> candidateVlessLinks = new ArrayList<>();
+        appendVlessCandidates(rawSubscription, candidateVlessLinks);
+
         String[] lines = rawSubscription.split("\\r?\\n");
         for (String line : lines) {
             String trimmed = line.trim();
@@ -343,13 +348,39 @@ public class BypassXTileService extends TileService {
                 continue;
             }
 
+            appendVlessCandidates(trimmed, candidateVlessLinks);
+
             appendVlessLinksFromText(trimmed, parsedConfigs);
             String decoded = decodeBase64(trimmed);
             if (decoded != null) {
+                appendVlessCandidates(decoded, candidateVlessLinks);
                 appendVlessLinksFromText(decoded, parsedConfigs);
             }
         }
+
+        if (parsedConfigs.isEmpty() && !candidateVlessLinks.isEmpty()) {
+            String baseLink = candidateVlessLinks.get(0);
+            for (String packageKey : androidPackageNames.keySet()) {
+                String tagged = ensurePackageRemark(baseLink, packageKey);
+                parsedConfigs.put(packageKey, applyPackageOverrides(tagged, packageKey));
+            }
+        }
+
         return parsedConfigs;
+    }
+
+    private void appendVlessCandidates(String text, List<String> target) {
+        if (text == null || text.trim().isEmpty()) {
+            return;
+        }
+
+        String[] parts = text.split("\\r?\\n");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (trimmed.startsWith("vless://")) {
+                target.add(trimmed);
+            }
+        }
     }
 
     private void appendVlessLinksFromText(String text, Map<String, String> target) {
@@ -367,8 +398,69 @@ public class BypassXTileService extends TileService {
 
             String packageName = trimmedPart.substring(packageNameIndex + 1).trim();
             String packageKey = normalizePackageName(packageName);
-            target.put(packageKey, trimmedPart);
+            target.put(packageKey, applyPackageOverrides(trimmedPart, packageKey));
         }
+    }
+
+    private static Map<String, String> createPackageSniMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("facebook", "www.facebook.com");
+        map.put("youtube", "www.youtube.com");
+        map.put("zoom", "www.zoom.us");
+        map.put("instagram", "www.instagram.com");
+        map.put("viber", "www.viber.com");
+        return map;
+    }
+
+    private String ensurePackageRemark(String vlessLink, String packageKey) {
+        int hashIndex = vlessLink.indexOf('#');
+        if (hashIndex == -1) {
+            return vlessLink + "#" + packageKey;
+        }
+        return vlessLink.substring(0, hashIndex + 1) + packageKey;
+    }
+
+    private String applyPackageOverrides(String vlessLink, String packageKey) {
+        String sni = PACKAGE_SNI_BY_KEY.get(packageKey);
+        if (sni == null || sni.trim().isEmpty()) {
+            return vlessLink;
+        }
+
+        String[] hashParts = vlessLink.split("#", 2);
+        String base = hashParts[0];
+        String fragment = hashParts.length > 1 ? hashParts[1] : "";
+
+        int queryStart = base.indexOf('?');
+        if (queryStart == -1) {
+            return vlessLink;
+        }
+
+        String prefix = base.substring(0, queryStart);
+        String query = base.substring(queryStart + 1);
+        String[] pairs = query.split("&");
+        List<String> keptPairs = new ArrayList<>();
+
+        for (String pair : pairs) {
+            if (pair == null || pair.trim().isEmpty()) {
+                continue;
+            }
+            int equalIndex = pair.indexOf('=');
+            String key = equalIndex >= 0 ? pair.substring(0, equalIndex) : pair;
+            String normalized = key.trim().toLowerCase(Locale.US);
+            if ("sni".equals(normalized) || "host".equals(normalized)) {
+                continue;
+            }
+            keptPairs.add(pair);
+        }
+
+        keptPairs.add("sni=" + android.net.Uri.encode(sni));
+        keptPairs.add("host=" + android.net.Uri.encode(sni));
+
+        String rebuilt = prefix + "?" + String.join("&", keptPairs);
+        if (!fragment.isEmpty()) {
+            rebuilt = rebuilt + "#" + fragment;
+        }
+        return rebuilt;
     }
 
     private String decodeBase64(String encoded) {

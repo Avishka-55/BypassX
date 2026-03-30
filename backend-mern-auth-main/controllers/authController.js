@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import userModel from '../models/userModel.js';
 import registerOtpModel from '../models/registerOtpModel.js';
+import { isXuiConfigured, provisionXuiClientForUser } from '../config/xuiClient.js';
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
@@ -327,7 +328,19 @@ export const login = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.cookie('token', token, buildAuthCookieOptions());
 
-    return res.json({ success: true, message: 'Logged in successfully', token, user: { _id: user._id, name: user.name, email: user.email, isAccountVerified: user.isAccountVerified } });
+    return res.json({
+      success: true,
+      message: 'Logged in successfully',
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAccountVerified: user.isAccountVerified,
+        subscriptionUrl: user.subscriptionUrl || '',
+        xuiSubId: user.xuiSubId || ''
+      }
+    });
 
   } catch (error) {
     return res.json({ success: false, message: error.message });
@@ -388,6 +401,27 @@ export const approvalAction = async (req, res) => {
     }
 
     user.status = nextStatus;
+
+    if (nextStatus === 'active' && !user.subscriptionUrl) {
+      if (!isXuiConfigured()) {
+        return res.status(500).send('<h2>3x-ui is not configured on backend. Set XUI_* env values.</h2>');
+      }
+
+      try {
+        const provisioned = await provisionXuiClientForUser(user);
+        user.xuiInboundId = provisioned.inboundId;
+        user.xuiClientEmail = provisioned.xuiClientEmail;
+        user.xuiClientId = provisioned.xuiClientId;
+        user.xuiSubId = provisioned.xuiSubId;
+        user.subscriptionUrl = provisioned.subscriptionUrl;
+        user.quotaBytes = provisioned.quotaBytes;
+        user.xuiExpiryAt = provisioned.expiryAt;
+      } catch (provisionError) {
+        console.error('3x-ui provisioning failed for user', user.email, provisionError.message);
+        return res.status(500).send('<h2>User approval failed: could not create 3x-ui client.</h2>');
+      }
+    }
+
     await user.save();
 
     await sendEmail({

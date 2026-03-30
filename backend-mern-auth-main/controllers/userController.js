@@ -12,6 +12,8 @@ export const getUserData = async(req,res)=>{
             userData: {
                 name: user.name,
                 isAccountVerified: user.isAccountVerified,
+                subscriptionUrl: user.subscriptionUrl || '',
+                xuiSubId: user.xuiSubId || '',
                  
             }
         })

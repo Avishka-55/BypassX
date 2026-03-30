@@ -231,7 +231,7 @@ public class AuthActivity extends AppCompatActivity {
                     return;
                 }
 
-                AuthSessionManager.saveSession(this, response.token, response.name, response.email);
+                AuthSessionManager.saveSession(this, response.token, response.name, response.email, response.subscriptionUrl);
                 Toast.makeText(this, R.string.auth_success, Toast.LENGTH_SHORT).show();
                 openMainAndFinish();
             });
@@ -396,7 +396,7 @@ public class AuthActivity extends AppCompatActivity {
                 }
 
                 clearPendingState();
-                AuthSessionManager.saveSession(this, loginResponse.token, loginResponse.name, loginResponse.email);
+                AuthSessionManager.saveSession(this, loginResponse.token, loginResponse.name, loginResponse.email, loginResponse.subscriptionUrl);
                 Toast.makeText(this, R.string.auth_success, Toast.LENGTH_SHORT).show();
                 openMainAndFinish();
             });

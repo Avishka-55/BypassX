@@ -45,6 +45,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int LOCAL_SOCKS_PORT = 10808;
     private static final int NETWORK_TIMEOUT_MS = 6000;
     private static final long STATUS_CHECK_INTERVAL_MS = 30000L;
+    private static final Map<String, String> PACKAGE_SNI_BY_KEY = createPackageSniMap();
 
     private final Map<String, String> packageConfigs = new HashMap<>();
     private final Map<String, MaterialCardView> packageCards = new HashMap<>();
@@ -376,6 +378,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeAndroidPackageNames() {
+        androidPackageNames.put("facebook", "com.facebook.katana");
         androidPackageNames.put("youtube", "com.google.android.youtube");
         androidPackageNames.put("youtube_revanced", "app.revanced.android.youtube");
         androidPackageNames.put("zoom", "us.zoom.videomeetings");
@@ -693,6 +696,16 @@ public class MainActivity extends AppCompatActivity {
         return outputStream.toByteArray();
     }
 
+    private static Map<String, String> createPackageSniMap() {
+        Map<String, String> map = new HashMap<>();
+        map.put("facebook", "www.facebook.com");
+        map.put("youtube", "www.youtube.com");
+        map.put("zoom", "www.zoom.us");
+        map.put("instagram", "www.instagram.com");
+        map.put("viber", "www.viber.com");
+        return map;
+    }
+
     private String firstNonEmpty(String... values) {
         if (values == null) {
             return null;
@@ -706,6 +719,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupPackageCards() {
+        bindPackageCard("facebook", findViewById(R.id.card_facebook));
         bindPackageCard("youtube", findViewById(R.id.card_youtube));
         bindPackageCard("zoom", findViewById(R.id.card_zoom));
         bindPackageCard("whatsapp", findViewById(R.id.card_whatsapp));
@@ -803,9 +817,10 @@ public class MainActivity extends AppCompatActivity {
             if (remoteRaw != null) {
                 Map<String, String> parsed = parseConfigs(remoteRaw);
                 if (!parsed.isEmpty()) {
+                    String cachePayload = serializeConfigMap(parsed);
                     applyConfigs(parsed);
                     sharedPreferences.edit()
-                            .putString(PREF_SUBSCRIPTION_CACHE, remoteRaw)
+                            .putString(PREF_SUBSCRIPTION_CACHE, cachePayload)
                             .putLong(PREF_LAST_SYNC_TIME, System.currentTimeMillis())
                             .apply();
                     runOnUiThread(() -> {
@@ -857,7 +872,12 @@ public class MainActivity extends AppCompatActivity {
     private String downloadSubscriptionRaw() {
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(SUBSCRIPTION_URL);
+            String subscriptionUrl = resolveSubscriptionUrl();
+            if (subscriptionUrl == null || subscriptionUrl.trim().isEmpty()) {
+                return null;
+            }
+
+            URL url = new URL(subscriptionUrl);
             connection = (HttpURLConnection) url.openConnection();
             connection.setConnectTimeout(10000);
             connection.setReadTimeout(10000);
@@ -910,7 +930,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        String baseLink = null;
         for (String vlessLink : candidateVlessLinks) {
+            if (baseLink == null && vlessLink != null && vlessLink.trim().startsWith("vless://")) {
+                baseLink = vlessLink.trim();
+            }
+
             int packageNameIndex = vlessLink.lastIndexOf('#');
             if (packageNameIndex == -1 || packageNameIndex == vlessLink.length() - 1) {
                 continue;
@@ -919,11 +944,101 @@ public class MainActivity extends AppCompatActivity {
             String packageName = vlessLink.substring(packageNameIndex + 1).trim();
             String packageKey = normalizePackageName(packageName);
             if (packageCards.containsKey(packageKey)) {
-                parsedConfigs.put(packageKey, vlessLink.trim());
+                parsedConfigs.put(packageKey, applyPackageOverrides(vlessLink.trim(), packageKey));
+            }
+        }
+
+        if (baseLink != null) {
+            for (String packageKey : packageCards.keySet()) {
+                if (!parsedConfigs.containsKey(packageKey)) {
+                    String tagged = ensurePackageRemark(baseLink, packageKey);
+                    parsedConfigs.put(packageKey, applyPackageOverrides(tagged, packageKey));
+                }
             }
         }
 
         return parsedConfigs;
+    }
+
+    private String resolveSubscriptionUrl() {
+        String userUrl = AuthSessionManager.getSubscriptionUrl(this);
+        if (userUrl != null && !userUrl.trim().isEmpty()) {
+            return userUrl.trim();
+        }
+        if (SUBSCRIPTION_URL != null && !SUBSCRIPTION_URL.trim().isEmpty()) {
+            return SUBSCRIPTION_URL.trim();
+        }
+        return null;
+    }
+
+    private String serializeConfigMap(Map<String, String> configs) {
+        if (configs == null || configs.isEmpty()) {
+            return "";
+        }
+
+        List<String> keys = new ArrayList<>(configs.keySet());
+        Collections.sort(keys);
+
+        StringBuilder builder = new StringBuilder();
+        for (String key : keys) {
+            String value = configs.get(key);
+            if (value == null || value.trim().isEmpty()) {
+                continue;
+            }
+            builder.append(value.trim()).append('\n');
+        }
+        return builder.toString();
+    }
+
+    private String ensurePackageRemark(String vlessLink, String packageKey) {
+        int hashIndex = vlessLink.indexOf('#');
+        if (hashIndex == -1) {
+            return vlessLink + "#" + packageKey;
+        }
+        return vlessLink.substring(0, hashIndex + 1) + packageKey;
+    }
+
+    private String applyPackageOverrides(String vlessLink, String packageKey) {
+        String sni = PACKAGE_SNI_BY_KEY.get(packageKey);
+        if (sni == null || sni.trim().isEmpty()) {
+            return vlessLink;
+        }
+
+        String[] hashParts = vlessLink.split("#", 2);
+        String base = hashParts[0];
+        String fragment = hashParts.length > 1 ? hashParts[1] : "";
+
+        int queryStart = base.indexOf('?');
+        if (queryStart == -1) {
+            return vlessLink;
+        }
+
+        String prefix = base.substring(0, queryStart);
+        String query = base.substring(queryStart + 1);
+        String[] pairs = query.split("&");
+        List<String> keptPairs = new ArrayList<>();
+
+        for (String pair : pairs) {
+            if (pair == null || pair.trim().isEmpty()) {
+                continue;
+            }
+            int equalIndex = pair.indexOf('=');
+            String key = equalIndex >= 0 ? pair.substring(0, equalIndex) : pair;
+            String normalized = key.trim().toLowerCase(Locale.US);
+            if ("sni".equals(normalized) || "host".equals(normalized)) {
+                continue;
+            }
+            keptPairs.add(pair);
+        }
+
+        keptPairs.add("sni=" + Uri.encode(sni));
+        keptPairs.add("host=" + Uri.encode(sni));
+
+        String rebuilt = prefix + "?" + String.join("&", keptPairs);
+        if (!fragment.isEmpty()) {
+            rebuilt = rebuilt + "#" + fragment;
+        }
+        return rebuilt;
     }
 
     private void appendVlessLinksFromText(String text, List<String> target) {
@@ -981,6 +1096,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Map<String, String> displayNames = new LinkedHashMap<>();
+        displayNames.put("facebook", "Facebook");
         displayNames.put("youtube", "YouTube");
         displayNames.put("zoom", "Zoom");
         displayNames.put("whatsapp", "WhatsApp");

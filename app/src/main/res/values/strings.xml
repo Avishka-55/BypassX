@@ -26,6 +26,7 @@
     <string name="not_connected">Not Connected</string>
     <string name="connecting">Connecting...</string>
     <string name="connected">Connected ✓</string>
+    <string name="package_facebook">Facebook</string>
     <string name="package_youtube">YouTube</string>
     <string name="package_youtube_revanced">YouTube Revanced</string>
     <string name="package_zoom">Zoom</string>

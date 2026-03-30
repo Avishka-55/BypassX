@@ -140,7 +140,8 @@ public final class AuthApiClient {
 
             String name = user.optString("name", "");
             String email = user.optString("email", "");
-            return AuthResponse.success(message, token, name, email);
+            String subscriptionUrl = user.optString("subscriptionUrl", "");
+            return AuthResponse.success(message, token, name, email, subscriptionUrl);
         } catch (UnknownHostException e) {
             return AuthResponse.error("Auth server host not found");
         } catch (SocketTimeoutException e) {
@@ -181,43 +182,45 @@ public final class AuthApiClient {
         public final String token;
         public final String name;
         public final String email;
+        public final String subscriptionUrl;
         public final String status;
 
-        private AuthResponse(boolean success, String message, String token, String name, String email, String status) {
+        private AuthResponse(boolean success, String message, String token, String name, String email, String subscriptionUrl, String status) {
             this.success = success;
             this.message = message;
             this.token = token;
             this.name = name;
             this.email = email;
+            this.subscriptionUrl = subscriptionUrl;
             this.status = status;
         }
 
-        public static AuthResponse success(String message, String token, String name, String email) {
-            return new AuthResponse(true, message, token, name, email, "active");
+        public static AuthResponse success(String message, String token, String name, String email, String subscriptionUrl) {
+            return new AuthResponse(true, message, token, name, email, subscriptionUrl, "active");
         }
 
         public static AuthResponse pending(String message) {
-            return new AuthResponse(false, message, "", "", "", "pending");
+            return new AuthResponse(false, message, "", "", "", "", "pending");
         }
 
         public static AuthResponse active(String message) {
-            return new AuthResponse(true, message, "", "", "", "active");
+            return new AuthResponse(true, message, "", "", "", "", "active");
         }
 
         public static AuthResponse rejected(String message) {
-            return new AuthResponse(false, message, "", "", "", "rejected");
+            return new AuthResponse(false, message, "", "", "", "", "rejected");
         }
 
         public static AuthResponse error(String message) {
-            return new AuthResponse(false, message, "", "", "", "");
+            return new AuthResponse(false, message, "", "", "", "", "");
         }
 
         public static AuthResponse error(String message, String status) {
-            return new AuthResponse(false, message, "", "", "", status == null ? "" : status);
+            return new AuthResponse(false, message, "", "", "", "", status == null ? "" : status);
         }
 
         public static AuthResponse info(String message) {
-            return new AuthResponse(true, message, "", "", "", "");
+            return new AuthResponse(true, message, "", "", "", "", "");
         }
     }
 }
