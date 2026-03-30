@@ -2,6 +2,11 @@
     <string name="app_name">BypassX</string>
     <string name="app_tagline">Secure Network Client</string>
     <string name="select_package">Select package</string>
+    <string name="package_selector_title">Package</string>
+    <string name="package_selector_button">Choose package</string>
+    <string name="package_selected_none">Selected: none</string>
+    <string name="package_selected_format">Selected: %1$s</string>
+    <string name="package_picker_title">Select package</string>
     <string name="loading_packages">Loading packages...</string>
     <string name="packages_loaded">Loaded %1$d packages</string>
     <string name="packages_loaded_cached">Loaded %1$d cached packages</string>
@@ -9,6 +14,11 @@
     <string name="parsed_packages_format">Parsed packages: %1$s</string>
     <string name="last_sync_never">Last sync: never</string>
     <string name="last_sync_format">Last sync: %1$s</string>
+    <string name="remaining_data_label">Remaining</string>
+    <string name="expiry_date_label">Expires</string>
+    <string name="subscription_loading_value">Loading...</string>
+    <string name="subscription_unlimited">Unlimited</string>
+    <string name="subscription_unavailable">Unavailable</string>
     <string name="error_load_packages">Could not load packages, check connection</string>
     <string name="error_select_package_first">Please select a package first</string>
     <string name="connect">Power</string>

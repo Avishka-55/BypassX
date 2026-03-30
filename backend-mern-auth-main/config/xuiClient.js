@@ -208,6 +208,22 @@ class XuiApiClient {
       subscriptionUrl: this.buildSubscriptionUrl(client.subId, defaultSettings),
     };
   }
+
+  async getClientTrafficByEmail(clientEmail) {
+    await this.login();
+
+    const safeEmail = encodeURIComponent(String(clientEmail || '').trim());
+    const { json } = await this.request(`/panel/api/inbounds/getClientTraffics/${safeEmail}`, {
+      method: 'GET',
+      body: null,
+    });
+
+    if (!json.success) {
+      throw new Error(json.msg || '3x-ui getClientTraffics failed');
+    }
+
+    return json.obj || null;
+  }
 }
 
 export const isXuiConfigured = () => {
@@ -221,4 +237,12 @@ export const provisionXuiClientForUser = async (user) => {
     throw new Error('3x-ui is not configured. Set XUI_PANEL_URL, XUI_USERNAME, XUI_PASSWORD, XUI_INBOUND_ID.');
   }
   return client.createClientForUser(user);
+};
+
+export const getXuiClientTrafficByEmail = async (clientEmail) => {
+  const client = new XuiApiClient();
+  if (!client.isConfigured()) {
+    throw new Error('3x-ui is not configured. Set XUI_PANEL_URL, XUI_USERNAME, XUI_PASSWORD, XUI_INBOUND_ID.');
+  }
+  return client.getClientTrafficByEmail(clientEmail);
 };

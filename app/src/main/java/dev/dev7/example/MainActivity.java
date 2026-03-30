@@ -17,6 +17,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Base64;
+import android.text.format.Formatter;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -31,7 +32,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
@@ -52,7 +53,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -79,11 +79,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOCAL_PROXY_HOST = "127.0.0.1";
     private static final int LOCAL_SOCKS_PORT = 10808;
     private static final int NETWORK_TIMEOUT_MS = 6000;
+    private static final int AUTH_TIMEOUT_MS = 15000;
     private static final long STATUS_CHECK_INTERVAL_MS = 30000L;
     private static final Map<String, String> PACKAGE_SNI_BY_KEY = createPackageSniMap();
+    private static final Map<String, String> PACKAGE_DISPLAY_NAMES = createPackageDisplayNames();
 
     private final Map<String, String> packageConfigs = new HashMap<>();
-    private final Map<String, MaterialCardView> packageCards = new HashMap<>();
     private final Map<String, String> splitTunnelApps = new HashMap<>();  // packageKey -> display name
     private final Map<String, String> androidPackageNames = new HashMap<>();  // packageKey -> android package name
     private String selectedPackageKey;
@@ -103,6 +104,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView subscriptionStatus;
     private TextView parsedPackagesDebug;
     private TextView lastSyncStatus;
+    private MaterialButton packageSelectorButton;
+    private TextView selectedPackageValue;
+    private TextView remainingDataValue;
+    private TextView expiryDateValue;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private MaterialToolbar topToolbar;
@@ -150,6 +155,10 @@ public class MainActivity extends AppCompatActivity {
         subscriptionStatus = findViewById(R.id.subscription_status);
         parsedPackagesDebug = findViewById(R.id.parsed_packages_debug);
         lastSyncStatus = findViewById(R.id.last_sync_status);
+        packageSelectorButton = findViewById(R.id.package_selector_button);
+        selectedPackageValue = findViewById(R.id.selected_package_value);
+        remainingDataValue = findViewById(R.id.remaining_data_value);
+        expiryDateValue = findViewById(R.id.expiry_date_value);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         topToolbar = findViewById(R.id.top_toolbar);
@@ -166,16 +175,17 @@ public class MainActivity extends AppCompatActivity {
         setupNavigationDrawer();
         setupProxyTetheringPanel();
         setupSplitTunnelPanel();
-        setupPackageCards();
         selectedPackageKey = sharedPreferences.getString(PREF_SELECTED_PACKAGE_KEY, null);
         refreshPackageSelectionUi();
         updateLastSyncUi();
+        packageSelectorButton.setOnClickListener(v -> showPackageSelectorDialog());
         connectButton.setOnClickListener(v -> onConnectButtonClick());
         pingButton.setOnClickListener(v -> onPingButtonClick());
 
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
         fetchSubscriptionConfigs();
+        fetchSubscriptionStatus();
         validateAccountStatus(true);
     }
 
@@ -706,6 +716,18 @@ public class MainActivity extends AppCompatActivity {
         return map;
     }
 
+    private static Map<String, String> createPackageDisplayNames() {
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("facebook", "Facebook");
+        map.put("youtube", "YouTube");
+        map.put("zoom", "Zoom");
+        map.put("whatsapp", "WhatsApp");
+        map.put("viber", "Viber");
+        map.put("netflix", "Netflix");
+        map.put("instagram", "Instagram");
+        return map;
+    }
+
     private String firstNonEmpty(String... values) {
         if (values == null) {
             return null;
@@ -718,37 +740,50 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-    private void setupPackageCards() {
-        bindPackageCard("facebook", findViewById(R.id.card_facebook));
-        bindPackageCard("youtube", findViewById(R.id.card_youtube));
-        bindPackageCard("zoom", findViewById(R.id.card_zoom));
-        bindPackageCard("whatsapp", findViewById(R.id.card_whatsapp));
-        bindPackageCard("viber", findViewById(R.id.card_viber));
-        bindPackageCard("netflix", findViewById(R.id.card_netflix));
-        bindPackageCard("instagram", findViewById(R.id.card_instagram));
-    }
-
-    private void bindPackageCard(String packageKey, MaterialCardView cardView) {
-        packageCards.put(packageKey, cardView);
-        cardView.setOnClickListener(v -> {
-            if (isConnectionConfigLocked()) {
-                return;
-            }
-            selectedPackageKey = packageKey;
-            sharedPreferences.edit().putString(PREF_SELECTED_PACKAGE_KEY, packageKey).apply();
-            refreshPackageSelectionUi();
-        });
-    }
-
     private void refreshPackageSelectionUi() {
-        boolean lockConfig = isConnectionConfigLocked();
-        for (Map.Entry<String, MaterialCardView> entry : packageCards.entrySet()) {
-            boolean isSelected = Objects.equals(selectedPackageKey, entry.getKey());
-            entry.getValue().setEnabled(!lockConfig);
-            entry.getValue().setStrokeWidth(isSelected ? dpToPx(2) : 0);
-            entry.getValue().setStrokeColor(ContextCompat.getColor(this, R.color.accent_cyan));
-            entry.getValue().setCardBackgroundColor(ContextCompat.getColor(this, isSelected ? R.color.card_selected_background : R.color.card_background));
+        String selectedLabel = PACKAGE_DISPLAY_NAMES.get(selectedPackageKey);
+        if (selectedLabel == null || selectedLabel.trim().isEmpty()) {
+            selectedPackageValue.setText(R.string.package_selected_none);
+        } else {
+            selectedPackageValue.setText(getString(R.string.package_selected_format, selectedLabel));
         }
+        packageSelectorButton.setEnabled(!isConnectionConfigLocked());
+    }
+
+    private void showPackageSelectorDialog() {
+        if (isConnectionConfigLocked()) {
+            return;
+        }
+
+        List<String> availableKeys = new ArrayList<>();
+        List<String> availableLabels = new ArrayList<>();
+
+        for (Map.Entry<String, String> entry : PACKAGE_DISPLAY_NAMES.entrySet()) {
+            if (packageConfigs.containsKey(entry.getKey())) {
+                availableKeys.add(entry.getKey());
+                availableLabels.add(entry.getValue());
+            }
+        }
+
+        if (availableKeys.isEmpty()) {
+            Toast.makeText(this, R.string.error_load_packages, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int checkedIndex = availableKeys.indexOf(selectedPackageKey);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.package_picker_title)
+                .setSingleChoiceItems(availableLabels.toArray(new String[0]), checkedIndex, (dialog, which) -> {
+                    if (which >= 0 && which < availableKeys.size()) {
+                        selectedPackageKey = availableKeys.get(which);
+                        sharedPreferences.edit().putString(PREF_SELECTED_PACKAGE_KEY, selectedPackageKey).apply();
+                        refreshPackageSelectionUi();
+                    }
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private boolean isConnectionConfigLocked() {
@@ -943,13 +978,13 @@ public class MainActivity extends AppCompatActivity {
 
             String packageName = vlessLink.substring(packageNameIndex + 1).trim();
             String packageKey = normalizePackageName(packageName);
-            if (packageCards.containsKey(packageKey)) {
+            if (PACKAGE_DISPLAY_NAMES.containsKey(packageKey)) {
                 parsedConfigs.put(packageKey, applyPackageOverrides(vlessLink.trim(), packageKey));
             }
         }
 
         if (baseLink != null) {
-            for (String packageKey : packageCards.keySet()) {
+            for (String packageKey : PACKAGE_DISPLAY_NAMES.keySet()) {
                 if (!parsedConfigs.containsKey(packageKey)) {
                     String tagged = ensurePackageRemark(baseLink, packageKey);
                     parsedConfigs.put(packageKey, applyPackageOverrides(tagged, packageKey));
@@ -1117,6 +1152,116 @@ public class MainActivity extends AppCompatActivity {
         return getString(R.string.parsed_packages_format, String.join(", ", loaded));
     }
 
+    private void fetchSubscriptionStatus() {
+        final String token = AuthSessionManager.getToken(this);
+        if (token == null || token.trim().isEmpty()) {
+            remainingDataValue.setText(R.string.subscription_unavailable);
+            expiryDateValue.setText(R.string.subscription_unavailable);
+            return;
+        }
+
+        remainingDataValue.setText(R.string.subscription_loading_value);
+        expiryDateValue.setText(R.string.subscription_loading_value);
+
+        executorService.execute(() -> {
+            SubscriptionStatus status = requestSubscriptionStatus(token);
+            runOnUiThread(() -> renderSubscriptionStatus(status));
+        });
+    }
+
+    private SubscriptionStatus requestSubscriptionStatus(String token) {
+        HttpURLConnection connection = null;
+        try {
+            String baseUrl = sanitizeAuthBaseUrl(BuildConfig.AUTH_BASE_URL);
+            if (baseUrl.isEmpty()) {
+                return SubscriptionStatus.unavailable();
+            }
+
+            URL url = new URL(baseUrl + "/api/user/subscription-status");
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(AUTH_TIMEOUT_MS);
+            connection.setReadTimeout(AUTH_TIMEOUT_MS);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Authorization", "Bearer " + token);
+
+            int code = connection.getResponseCode();
+            InputStream stream = code >= 200 && code < 400
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
+
+            if (stream == null) {
+                return SubscriptionStatus.unavailable();
+            }
+
+            String responseText = readString(stream);
+            JSONObject json = responseText.isEmpty() ? new JSONObject() : new JSONObject(responseText);
+            if (!json.optBoolean("success", false)) {
+                return SubscriptionStatus.unavailable();
+            }
+
+            JSONObject sub = json.optJSONObject("subscription");
+            if (sub == null) {
+                return SubscriptionStatus.unavailable();
+            }
+
+            boolean unlimited = sub.optBoolean("unlimited", false);
+            long remaining = sub.optLong("remainingBytes", 0);
+            long expiryAt = sub.optLong("expiryAt", 0);
+            return new SubscriptionStatus(unlimited, remaining, expiryAt, true);
+        } catch (Exception ignored) {
+            return SubscriptionStatus.unavailable();
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private void renderSubscriptionStatus(SubscriptionStatus status) {
+        if (status == null || !status.available) {
+            remainingDataValue.setText(R.string.subscription_unavailable);
+            expiryDateValue.setText(R.string.subscription_unavailable);
+            return;
+        }
+
+        if (status.unlimited) {
+            remainingDataValue.setText(R.string.subscription_unlimited);
+        } else {
+            remainingDataValue.setText(Formatter.formatShortFileSize(this, Math.max(0L, status.remainingBytes)));
+        }
+
+        if (status.expiryAt > 0) {
+            String dateText = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+                    .format(new Date(status.expiryAt));
+            expiryDateValue.setText(dateText);
+        } else {
+            expiryDateValue.setText(R.string.subscription_unlimited);
+        }
+    }
+
+    private String sanitizeAuthBaseUrl(String value) {
+        if (value == null) {
+            return "";
+        }
+        String out = value.trim();
+        while (out.endsWith("/")) {
+            out = out.substring(0, out.length() - 1);
+        }
+        return out;
+    }
+
+    private String readString(InputStream inputStream) throws Exception {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
+            }
+            return builder.toString();
+        }
+    }
+
     private void registerV2rayReceiver() {
         if (isV2rayReceiverRegistered) {
             return;
@@ -1190,11 +1335,6 @@ public class MainActivity extends AppCompatActivity {
             }
     }
 
-    private int dpToPx(int dpValue) {
-        float density = getResources().getDisplayMetrics().density;
-        return (int) (dpValue * density);
-    }
-
     @Override
     public void onBackPressed() {
         if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.END)) {
@@ -1229,6 +1369,25 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
+        fetchSubscriptionStatus();
+    }
+
+    private static final class SubscriptionStatus {
+        private final boolean unlimited;
+        private final long remainingBytes;
+        private final long expiryAt;
+        private final boolean available;
+
+        private SubscriptionStatus(boolean unlimited, long remainingBytes, long expiryAt, boolean available) {
+            this.unlimited = unlimited;
+            this.remainingBytes = remainingBytes;
+            this.expiryAt = expiryAt;
+            this.available = available;
+        }
+
+        private static SubscriptionStatus unavailable() {
+            return new SubscriptionStatus(false, 0, 0, false);
+        }
     }
 
     private static final class PingResult {
