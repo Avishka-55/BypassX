@@ -52,6 +52,10 @@ app.get('/', (req, res) => {
   res.send('API Working 👌')
 })
 
+app.get('/api', (req, res) => {
+  res.json({ success: true, message: 'API working' })
+})
+
 // routes
 app.use('/api/auth', authRouter)
 app.use('/api/user', userRouter)
