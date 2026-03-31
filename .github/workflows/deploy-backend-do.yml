@@ -1,0 +1,98 @@
+name: Deploy Backend To DO
+
+on:
+  push:
+    branches:
+      - main
+      - feature/3x-ui
+    paths:
+      - "backend-mern-auth-main/**"
+      - ".github/workflows/deploy-backend-do.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend-do
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+
+      - name: Add droplet to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${{ vars.DO_SSH_PORT || 22 }}" -H "${{ vars.DO_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload backend source
+        run: |
+          rsync -az --delete \
+            --exclude "node_modules" \
+            --exclude ".env" \
+            -e "ssh -p ${{ vars.DO_SSH_PORT || 22 }}" \
+            backend-mern-auth-main/ \
+            "${{ vars.DO_USER }}@${{ vars.DO_HOST }}:${{ vars.DO_DEPLOY_PATH }}/"
+
+      - name: Upload backend .env
+        run: |
+          printf "%s" "${{ secrets.BACKEND_ENV_FILE }}" > backend.env
+          rsync -az \
+            -e "ssh -p ${{ vars.DO_SSH_PORT || 22 }}" \
+            backend.env \
+            "${{ vars.DO_USER }}@${{ vars.DO_HOST }}:${{ vars.DO_DEPLOY_PATH }}/.env"
+          rm -f backend.env
+
+      - name: Install deps and restart service
+        run: |
+          ssh -p "${{ vars.DO_SSH_PORT || 22 }}" "${{ vars.DO_USER }}@${{ vars.DO_HOST }}" << 'EOF'
+          set -euo pipefail
+
+          DEPLOY_PATH="${{ vars.DO_DEPLOY_PATH }}"
+          SERVICE_NAME="${{ vars.DO_SYSTEMD_SERVICE || 'bypassx-backend' }}"
+
+          if ! command -v node >/dev/null 2>&1; then
+            echo "Node.js is missing on droplet. Install Node 20+ first."
+            exit 1
+          fi
+
+          mkdir -p "$DEPLOY_PATH"
+          cd "$DEPLOY_PATH"
+
+          if [ -f package-lock.json ]; then
+            npm ci --omit=dev
+          else
+            npm install --omit=dev
+          fi
+
+          cat > "/etc/systemd/system/${SERVICE_NAME}.service" <<SERVICE
+          [Unit]
+          Description=BypassX backend API
+          After=network.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory=${DEPLOY_PATH}
+          Environment=NODE_ENV=production
+          EnvironmentFile=${DEPLOY_PATH}/.env
+          ExecStart=$(command -v node) server.js
+          Restart=always
+          RestartSec=5
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+          SERVICE
+
+          systemctl daemon-reload
+          systemctl enable "${SERVICE_NAME}" >/dev/null 2>&1 || true
+          systemctl restart "${SERVICE_NAME}"
+          systemctl --no-pager --full status "${SERVICE_NAME}" | head -n 25
+          EOF
