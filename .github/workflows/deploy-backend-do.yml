@@ -55,8 +55,24 @@ jobs:
           ssh -p "${{ vars.DO_SSH_PORT || 22 }}" "${{ vars.DO_USER }}@${{ vars.DO_HOST }}" << 'EOF'
           set -euo pipefail
 
-          DEPLOY_PATH="${{ vars.DO_DEPLOY_PATH }}"
-          SERVICE_NAME="${{ vars.DO_SYSTEMD_SERVICE || 'bypassx-backend' }}"
+          sanitize_var() {
+            # Strip CR/LF and trim leading/trailing whitespace from GitHub vars.
+            # This protects against copy/paste artifacts in repo Variables.
+            printf '%s' "$1" | tr -d '\r\n' | sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
+          }
+
+          DEPLOY_PATH="$(sanitize_var "${{ vars.DO_DEPLOY_PATH }}")"
+          SERVICE_NAME="$(sanitize_var "${{ vars.DO_SYSTEMD_SERVICE || 'bypassx-backend' }}")"
+
+          if [ -z "$DEPLOY_PATH" ]; then
+            echo "DO_DEPLOY_PATH is empty after sanitization"
+            exit 1
+          fi
+
+          if ! printf '%s' "$SERVICE_NAME" | grep -Eq '^[A-Za-z0-9_.@-]+$'; then
+            echo "Invalid DO_SYSTEMD_SERVICE value: '$SERVICE_NAME'"
+            exit 1
+          fi
 
           if ! command -v node >/dev/null 2>&1; then
             echo "Node.js is missing on droplet. Install Node 20+ first."
