@@ -1130,7 +1130,7 @@ public class MainActivity extends AppCompatActivity {
         String[] parts = text.split("\\r?\\n");
         for (String part : parts) {
             String trimmedPart = part.trim();
-            if (trimmedPart.startsWith("vless://") && trimmedPart.contains("#")) {
+            if (trimmedPart.startsWith("vless://")) {
                 target.add(trimmedPart);
             }
         }
