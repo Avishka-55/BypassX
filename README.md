@@ -51,17 +51,11 @@ High-level flow:
 
 ## App Screenshots
 
-### Login Screen
-
-![Login Screen](app/login.jpeg)
-
-### Connected State
-
-![Connected Screen](app/connected.jpeg)
-
-### Disconnected State
-
-![Disconnected Screen](app/disconnected.jpeg)
+<p align="center">
+	<img src="app/login.jpeg" alt="Login Screen" width="240" />
+	<img src="app/connected.jpeg" alt="Connected Screen" width="240" />
+	<img src="app/disconnected.jpeg" alt="Disconnected Screen" width="240" />
+</p>
 
 ## Built-in Packages (SNI)
 
