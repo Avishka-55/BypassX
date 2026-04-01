@@ -7,11 +7,13 @@ import android.annotation.SuppressLint;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.BroadcastReceiver;
+import android.content.pm.PackageManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.ActivityNotFoundException;
+import android.content.res.ColorStateList;
 import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
@@ -29,6 +31,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -117,7 +121,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView subscriptionStatus;
     private TextView parsedPackagesDebug;
     private TextView lastSyncStatus;
-    private MaterialButton packageSelectorButton;
+    private LinearLayout packageIconContainer;
+    private MaterialButton customSniButton;
+    private ImageView selectedPackageIcon;
     private TextView selectedPackageValue;
     private TextView remainingDataValue;
     private TextView expiryDateValue;
@@ -169,7 +175,9 @@ public class MainActivity extends AppCompatActivity {
         subscriptionStatus = findViewById(R.id.subscription_status);
         parsedPackagesDebug = findViewById(R.id.parsed_packages_debug);
         lastSyncStatus = findViewById(R.id.last_sync_status);
-        packageSelectorButton = findViewById(R.id.package_selector_button);
+        packageIconContainer = findViewById(R.id.package_icon_container);
+        customSniButton = findViewById(R.id.custom_sni_button);
+        selectedPackageIcon = findViewById(R.id.selected_package_icon);
         selectedPackageValue = findViewById(R.id.selected_package_value);
         remainingDataValue = findViewById(R.id.remaining_data_value);
         expiryDateValue = findViewById(R.id.expiry_date_value);
@@ -194,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
         selectedPackageKey = sharedPreferences.getString(PREF_SELECTED_PACKAGE_KEY, null);
         refreshPackageSelectionUi();
         updateLastSyncUi();
-        packageSelectorButton.setOnClickListener(v -> showPackageSelectorDialog());
+        customSniButton.setOnClickListener(v -> showCustomSniDialog());
         connectButton.setOnClickListener(v -> onConnectButtonClick());
         pingButton.setOnClickListener(v -> onPingButtonClick());
 
@@ -354,6 +362,11 @@ public class MainActivity extends AppCompatActivity {
                 drawerLayout.closeDrawers();
                 return true;
             }
+            if (itemId == R.id.nav_about) {
+                showAboutDialog();
+                drawerLayout.closeDrawers();
+                return true;
+            }
             if (itemId == R.id.nav_logout) {
                 performLogout();
                 return true;
@@ -498,12 +511,17 @@ public class MainActivity extends AppCompatActivity {
     private void initializeAndroidPackageNames() {
         androidPackageNames.put("facebook", "com.facebook.katana");
         androidPackageNames.put("youtube", "com.google.android.youtube");
-        androidPackageNames.put("youtube_revanced", "app.revanced.android.youtube");
-        androidPackageNames.put("zoom", "us.zoom.videomeetings");
+        androidPackageNames.put("zoomnormal", "us.zoom.videomeetings");
+        androidPackageNames.put("zoomdialog", "us.zoom.videomeetings");
         androidPackageNames.put("whatsapp", "com.whatsapp");
         androidPackageNames.put("viber", "com.viber.voip");
         androidPackageNames.put("netflix", "com.netflix.mediaclient");
         androidPackageNames.put("instagram", "com.instagram.android");
+        androidPackageNames.put("telegram", "org.telegram.messenger");
+        androidPackageNames.put("spotify", "com.spotify.music");
+        androidPackageNames.put("linkedin", "com.linkedin.android");
+        androidPackageNames.put("xtwitter", "com.twitter.android");
+        androidPackageNames.put("tiktok", "com.zhiliaoapp.musically");
     }
 
     private void setupSplitTunnelPanel() {
@@ -876,10 +894,104 @@ public class MainActivity extends AppCompatActivity {
         }
         if (selectedLabel == null || selectedLabel.trim().isEmpty()) {
             selectedPackageValue.setText(R.string.package_selected_none);
+            selectedPackageIcon.setImageResource(R.drawable.ic_pkg_default);
         } else {
             selectedPackageValue.setText(getString(R.string.package_selected_format, selectedLabel));
+            selectedPackageIcon.setImageDrawable(resolvePackageIconDrawable(selectedPackageKey));
         }
-        packageSelectorButton.setEnabled(!isConnectionConfigLocked());
+        boolean enabled = !isConnectionConfigLocked();
+        customSniButton.setEnabled(enabled);
+        customSniButton.setAlpha(enabled ? 1f : 0.5f);
+        renderPackageShortcutStrip();
+    }
+
+    private void renderPackageShortcutStrip() {
+        packageIconContainer.removeAllViews();
+        boolean enabled = !isConnectionConfigLocked();
+
+        for (Map.Entry<String, String> entry : PACKAGE_DISPLAY_NAMES.entrySet()) {
+            String packageKey = entry.getKey();
+            if (!packageConfigs.containsKey(packageKey)) {
+                continue;
+            }
+
+                FrameLayout iconHolder = new FrameLayout(this);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(40), dp(40));
+                params.setMarginEnd(dp(8));
+                iconHolder.setLayoutParams(params);
+
+                ImageView iconView = new ImageView(this);
+                FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                );
+                iconView.setLayoutParams(iconParams);
+            iconView.setPadding(dp(6), dp(6), dp(6), dp(6));
+            iconView.setImageDrawable(resolvePackageIconDrawable(packageKey));
+            iconView.setBackgroundResource(packageKey.equals(selectedPackageKey)
+                    ? R.drawable.bg_package_icon_chip_selected
+                    : R.drawable.bg_package_icon_chip);
+            iconView.setContentDescription(entry.getValue());
+            iconView.setEnabled(enabled);
+            iconView.setAlpha(enabled ? 1f : 0.6f);
+            iconView.setOnClickListener(v -> {
+                if (isConnectionConfigLocked()) {
+                    return;
+                }
+                selectedPackageKey = packageKey;
+                sharedPreferences.edit().putString(PREF_SELECTED_PACKAGE_KEY, selectedPackageKey).apply();
+                refreshPackageSelectionUi();
+            });
+            iconView.setOnLongClickListener(v -> {
+                Toast.makeText(this, entry.getValue(), Toast.LENGTH_SHORT).show();
+                return true;
+            });
+
+            iconHolder.addView(iconView);
+
+            if ("zoomnormal".equals(packageKey) || "zoomdialog".equals(packageKey)) {
+                TextView badge = new TextView(this);
+                FrameLayout.LayoutParams badgeParams = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT
+                );
+                badgeParams.gravity = android.view.Gravity.END | android.view.Gravity.TOP;
+                badgeParams.setMargins(0, dp(1), dp(1), 0);
+                badge.setLayoutParams(badgeParams);
+                badge.setText("zoomnormal".equals(packageKey) ? "N" : "D");
+                badge.setTextSize(9f);
+                badge.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+                badge.setBackgroundResource(R.drawable.bg_stat_chip);
+                badge.setPadding(dp(4), dp(1), dp(4), dp(1));
+                iconHolder.addView(badge);
+            }
+
+            packageIconContainer.addView(iconHolder);
+        }
+    }
+
+    private android.graphics.drawable.Drawable resolvePackageIconDrawable(String packageKey) {
+        if (packageKey == null || CUSTOM_PACKAGE_KEY.equals(packageKey)) {
+            return ContextCompat.getDrawable(this, R.drawable.ic_pkg_default);
+        }
+
+        String androidPackageName = androidPackageNames.get(packageKey);
+        if (androidPackageName != null) {
+            try {
+                PackageManager pm = getPackageManager();
+                android.graphics.drawable.Drawable installedIcon = pm.getApplicationIcon(androidPackageName);
+                if (installedIcon != null) {
+                    return installedIcon;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        return ContextCompat.getDrawable(this, R.drawable.ic_pkg_default);
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density);
     }
 
     private void showPackageSelectorDialog() {

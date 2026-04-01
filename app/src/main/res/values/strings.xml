@@ -101,19 +101,27 @@ wa.me/94759106855
 Powered by Xray Core</string>
     <string name="about_logo_desc">BypassX logo</string>
     <string name="about_name">BypassX</string>
-    <string name="about_version">Version 1.0.0</string>
-    <string name="about_intro">BypassX is a fast, secure and lightweight personal network client built for seamless connectivity.</string>
-    <string name="about_specs">Version: 1.0.0
-Android: 8.0+
-Protocol: VLESS/TLS
-Core: Xray Core</string>
+    <string name="about_version">Private VPN for Android</string>
+    <string name="about_intro">BypassX is a fast and private VPN for Android powered by VLESS/Xray. It is designed to bypass network restrictions and deep packet inspection while respecting user privacy and avoiding traffic logging.</string>
+    <string name="about_specs">Core Protocol
+VLESS / Xray
+
+Platform
+Android</string>
     <string name="about_developer">Developer
-BypassX Team</string>
-    <string name="about_support">Support
-Available on WhatsApp
-wa.me/94759106855</string>
-    <string name="about_footer">© 2026 BypassX. All rights reserved.
-Powered by Xray Core</string>
+Avishka</string>
+    <string name="about_support">Email
+wijesundara.avishka@gmail.com
+
+WhatsApp
++94 75 910 6855</string>
+    <string name="about_section_overview">Overview</string>
+    <string name="about_section_technology">Technology</string>
+    <string name="about_section_contact">Developer &amp; Contact</string>
+    <string name="about_privacy_title">Privacy Policy</string>
+    <string name="about_privacy_link">https://yoursite.netlify.app/#privacy</string>
+    <string name="about_footer">Built for secure, open internet access.
+BypassX © 2026</string>
     <string name="about_nav_subtitle">Secure private connectivity</string>
     <string name="coming_soon">Coming soon!</string>
     <string name="whatsapp_not_found">WhatsApp is not installed</string>

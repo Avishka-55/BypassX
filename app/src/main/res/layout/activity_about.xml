@@ -10,7 +10,7 @@
         android:id="@+id/about_toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/card_background"
+        android:background="@drawable/bg_toolbar_glass"
         android:minHeight="?attr/actionBarSize"
         app:navigationIcon="@android:drawable/ic_menu_close_clear_cancel"
         app:title="@string/about_title"
@@ -25,26 +25,27 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="18dp">
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/card_background"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="22dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/card_selected_background"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/panel_stroke"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_panel_glass"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="18dp">
 
                     <ImageView
-                        android:layout_width="92dp"
-                        android:layout_height="92dp"
+                        android:layout_width="84dp"
+                        android:layout_height="84dp"
                         android:layout_gravity="center_horizontal"
                         android:contentDescription="@string/about_logo_desc"
                         android:src="@drawable/ic_launcher" />
@@ -52,11 +53,11 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="12dp"
                         android:gravity="center"
                         android:text="@string/about_name"
                         android:textColor="@color/text_primary"
-                        android:textSize="28sp"
+                        android:textSize="26sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -75,27 +76,69 @@
                         android:background="@color/card_selected_background" />
 
                     <TextView
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_stat_chip"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="@string/about_section_overview"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
                         android:lineSpacingExtra="3dp"
                         android:text="@string/about_intro"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp" />
 
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_stat_chip"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="@string/about_section_technology"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="18dp"
+                        android:layout_marginTop="10dp"
                         android:lineSpacingExtra="4dp"
                         android:text="@string/about_specs"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
 
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_stat_chip"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="@string/about_section_contact"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="18dp"
+                        android:layout_marginTop="10dp"
                         android:lineSpacingExtra="4dp"
                         android:text="@string/about_developer"
                         android:textColor="@color/text_primary"
@@ -105,9 +148,33 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:autoLink="web"
+                        android:autoLink="email|phone|web"
                         android:linksClickable="true"
                         android:text="@string/about_support"
+                        android:textColor="@color/accent_cyan"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@drawable/bg_stat_chip"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
+                        android:text="@string/about_privacy_title"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:autoLink="web"
+                        android:linksClickable="true"
+                        android:text="@string/about_privacy_link"
                         android:textColor="@color/accent_cyan"
                         android:textSize="14sp" />
 

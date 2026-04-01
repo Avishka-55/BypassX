@@ -21,6 +21,10 @@
         android:icon="@drawable/ic_menu_privacy_bx"
         android:title="@string/menu_privacy_policy" />
     <item
+        android:id="@+id/nav_about"
+        android:icon="@drawable/ic_menu_about_bx"
+        android:title="@string/menu_about" />
+    <item
         android:id="@+id/nav_logout"
         android:icon="@drawable/ic_menu_logout_bx"
         android:title="@string/menu_logout" />
