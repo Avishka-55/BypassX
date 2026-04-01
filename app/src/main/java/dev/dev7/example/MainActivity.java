@@ -7,7 +7,6 @@ import android.annotation.SuppressLint;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.BroadcastReceiver;
-import android.content.pm.PackageManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -15,11 +14,6 @@ import android.content.SharedPreferences;
 import android.content.ActivityNotFoundException;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
 import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
@@ -993,83 +987,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private android.graphics.drawable.Drawable resolvePackageIconDrawable(String packageKey) {
-        if (packageKey == null || CUSTOM_PACKAGE_KEY.equals(packageKey)) {
-            return ContextCompat.getDrawable(this, R.drawable.ic_pkg_default);
-        }
-
-        String androidPackageName = androidPackageNames.get(packageKey);
-        if (androidPackageName != null) {
-            try {
-                PackageManager pm = getPackageManager();
-                android.graphics.drawable.Drawable installedIcon = pm.getApplicationIcon(androidPackageName);
-                if (installedIcon != null) {
-                    return installedIcon;
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        return createPackageMonogramDrawable(packageKey);
+        return ContextCompat.getDrawable(this, resolvePackageIconRes(packageKey));
     }
 
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density);
     }
 
-    private android.graphics.drawable.Drawable createPackageMonogramDrawable(String packageKey) {
-        int sizePx = dp(24);
-        Bitmap bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-
-        Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bgPaint.setColor(resolveFallbackColor(packageKey));
-        canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, bgPaint);
-
-        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setColor(ContextCompat.getColor(this, R.color.text_primary));
-        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setTextSize(sizePx * 0.42f);
-
-        String label = resolveFallbackLabel(packageKey);
-        Paint.FontMetrics metrics = textPaint.getFontMetrics();
-        float baseline = (sizePx / 2f) - ((metrics.ascent + metrics.descent) / 2f);
-        canvas.drawText(label, sizePx / 2f, baseline, textPaint);
-
-        return new BitmapDrawable(getResources(), bitmap);
-    }
-
-    private String resolveFallbackLabel(String packageKey) {
-        if ("youtube".equals(packageKey)) return "Y";
-        if ("facebook".equals(packageKey)) return "F";
-        if ("tiktok".equals(packageKey)) return "T";
-        if ("zoomnormal".equals(packageKey)) return "N";
-        if ("zoomdialog".equals(packageKey)) return "D";
-        if ("xtwitter".equals(packageKey)) return "X";
-        if ("instagram".equals(packageKey)) return "I";
-        if ("viber".equals(packageKey)) return "V";
-        if ("netflix".equals(packageKey)) return "N";
-        if ("whatsapp".equals(packageKey)) return "W";
-        if ("telegram".equals(packageKey)) return "T";
-        if ("spotify".equals(packageKey)) return "S";
-        if ("linkedin".equals(packageKey)) return "L";
-        return "?";
-    }
-
-    private int resolveFallbackColor(String packageKey) {
-        if ("youtube".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_youtube);
-        if ("facebook".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_facebook);
-        if ("zoomnormal".equals(packageKey) || "zoomdialog".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_zoom);
-        if ("whatsapp".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_whatsapp);
-        if ("viber".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_viber);
-        if ("netflix".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_netflix);
-        if ("instagram".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_instagram);
-        if ("spotify".equals(packageKey)) return ContextCompat.getColor(this, R.color.connect_connected);
-        if ("telegram".equals(packageKey)) return ContextCompat.getColor(this, R.color.accent_cyan);
-        if ("linkedin".equals(packageKey)) return ContextCompat.getColor(this, R.color.connect_connecting);
-        if ("xtwitter".equals(packageKey)) return ContextCompat.getColor(this, R.color.text_secondary);
-        if ("tiktok".equals(packageKey)) return ContextCompat.getColor(this, R.color.panel_dark_soft);
-        return ContextCompat.getColor(this, R.color.card_selected_background);
+    private int resolvePackageIconRes(String packageKey) {
+        if (packageKey == null || CUSTOM_PACKAGE_KEY.equals(packageKey)) {
+            return R.drawable.ic_pkg_default;
+        }
+        if ("youtube".equals(packageKey)) return R.drawable.ic_pkg_youtube;
+        if ("facebook".equals(packageKey)) return R.drawable.ic_pkg_facebook;
+        if ("tiktok".equals(packageKey)) return R.drawable.ic_pkg_tiktok;
+        if ("zoomnormal".equals(packageKey)) return R.drawable.ic_pkg_zoomnormal;
+        if ("zoomdialog".equals(packageKey)) return R.drawable.ic_pkg_zoomdialog;
+        if ("xtwitter".equals(packageKey)) return R.drawable.ic_pkg_xtwitter;
+        if ("instagram".equals(packageKey)) return R.drawable.ic_pkg_instagram;
+        if ("viber".equals(packageKey)) return R.drawable.ic_pkg_viber;
+        if ("netflix".equals(packageKey)) return R.drawable.ic_pkg_netflix;
+        if ("whatsapp".equals(packageKey)) return R.drawable.ic_pkg_whatsapp;
+        if ("telegram".equals(packageKey)) return R.drawable.ic_pkg_telegram;
+        if ("spotify".equals(packageKey)) return R.drawable.ic_pkg_spotify;
+        if ("linkedin".equals(packageKey)) return R.drawable.ic_pkg_linkedin;
+        return R.drawable.ic_pkg_default;
     }
 
     private void showPackageSelectorDialog() {

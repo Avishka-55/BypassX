@@ -80,8 +80,7 @@
                                 android:background="@drawable/bg_package_icon_chip"
                                 android:contentDescription="@string/package_selector_title"
                                 android:padding="7dp"
-                                android:src="@drawable/ic_pkg_default"
-                                app:tint="@color/text_primary" />
+                                android:src="@drawable/ic_pkg_default" />
 
                             <TextView
                                 android:id="@+id/selected_package_value"
