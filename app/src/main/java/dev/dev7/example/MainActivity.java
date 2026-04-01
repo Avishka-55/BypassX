@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.ActivityNotFoundException;
 import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
@@ -305,8 +306,8 @@ public class MainActivity extends AppCompatActivity {
                 this,
                 drawerLayout,
                 topToolbar,
-                R.string.menu_home,
-                R.string.menu_home
+            R.string.drawer_open,
+            R.string.drawer_close
         );
         drawerLayout.addDrawerListener(drawerToggle);
         drawerToggle.syncState();
@@ -329,33 +330,36 @@ public class MainActivity extends AppCompatActivity {
 
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            if (itemId == R.id.nav_home) {
-                drawerLayout.closeDrawers();
-                return true;
-            }
-            if (itemId == R.id.nav_about) {
-                showAboutDialog();
-                drawerLayout.closeDrawers();
-                return true;
-            }
             if (itemId == R.id.nav_contact) {
                 openWhatsappContact();
                 drawerLayout.closeDrawers();
                 return true;
             }
-            if (itemId == R.id.nav_proxy_tethering) {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                drawerLayout.openDrawer(GravityCompat.END);
-                return true;
-            }
-            if (itemId == R.id.nav_split_tunnel) {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                drawerLayout.openDrawer(GravityCompat.END);
+            if (itemId == R.id.nav_settings) {
+                openSettingsPanel();
                 return true;
             }
             if (itemId == R.id.nav_share) {
+                shareApp();
+                drawerLayout.closeDrawers();
+                return true;
+            }
+            if (itemId == R.id.nav_check_update) {
                 Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show();
                 drawerLayout.closeDrawers();
+                return true;
+            }
+            if (itemId == R.id.nav_privacy_policy) {
+                openPrivacyPolicy();
+                drawerLayout.closeDrawers();
+                return true;
+            }
+            if (itemId == R.id.nav_logout) {
+                performLogout();
+                return true;
+            }
+            if (itemId == R.id.nav_exit) {
+                exitApplication();
                 return true;
             }
             return false;
@@ -379,6 +383,60 @@ public class MainActivity extends AppCompatActivity {
 
     private void showAboutDialog() {
         startActivity(new Intent(this, AboutActivity.class));
+    }
+
+    private void openSettingsPanel() {
+        drawerLayout.closeDrawer(GravityCompat.START);
+        drawerLayout.openDrawer(GravityCompat.END);
+    }
+
+    private void shareApp() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_message));
+        startActivity(Intent.createChooser(shareIntent, getString(R.string.menu_share)));
+    }
+
+    private void openPrivacyPolicy() {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.privacy_policy_url)));
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, R.string.privacy_open_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void performLogout() {
+        sharedPreferences.edit().clear().apply();
+        AuthSessionManager.clear(this);
+        stopVpnIfRunning();
+        stopProxyPanelLiveRefresh();
+        drawerLayout.closeDrawers();
+        Toast.makeText(this, R.string.logout_success, Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    private void exitApplication() {
+        stopVpnIfRunning();
+        stopProxyPanelLiveRefresh();
+        drawerLayout.closeDrawers();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            finishAndRemoveTask();
+            return;
+        }
+        finishAffinity();
+    }
+
+    private void stopVpnIfRunning() {
+        V2rayConstants.CONNECTION_STATES state = V2rayController.getConnectionState();
+        if (state == V2rayConstants.CONNECTION_STATES.CONNECTED
+                || state == V2rayConstants.CONNECTION_STATES.CONNECTING) {
+            V2rayController.stopV2ray(this);
+        }
     }
 
     private void openWhatsappContact() {

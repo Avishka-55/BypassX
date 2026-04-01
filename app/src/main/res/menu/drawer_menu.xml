@@ -1,27 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_home"
-        android:icon="@android:drawable/ic_menu_view"
-        android:title="@string/menu_home" />
-    <item
-        android:id="@+id/nav_proxy_tethering"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="@string/menu_proxy_tethering" />
-    <item
-        android:id="@+id/nav_split_tunnel"
-        android:icon="@android:drawable/ic_menu_preferences"
-        android:title="@string/menu_split_tunnel" />
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_menu_settings_bx"
+        android:title="@string/menu_settings" />
     <item
         android:id="@+id/nav_share"
-        android:icon="@android:drawable/ic_menu_share"
+        android:icon="@drawable/ic_menu_share_bx"
         android:title="@string/menu_share" />
     <item
         android:id="@+id/nav_contact"
-        android:icon="@android:drawable/ic_menu_call"
+        android:icon="@drawable/ic_menu_contact_bx"
         android:title="@string/menu_contact" />
     <item
-        android:id="@+id/nav_about"
-        android:icon="@android:drawable/ic_menu_info_details"
-        android:title="@string/menu_about" />
+        android:id="@+id/nav_check_update"
+        android:icon="@drawable/ic_menu_update_bx"
+        android:title="@string/menu_check_update" />
+    <item
+        android:id="@+id/nav_privacy_policy"
+        android:icon="@drawable/ic_menu_privacy_bx"
+        android:title="@string/menu_privacy_policy" />
+    <item
+        android:id="@+id/nav_logout"
+        android:icon="@drawable/ic_menu_logout_bx"
+        android:title="@string/menu_logout" />
+    <item
+        android:id="@+id/nav_exit"
+        android:icon="@drawable/ic_menu_exit_bx"
+        android:title="@string/menu_exit" />
 </menu>
