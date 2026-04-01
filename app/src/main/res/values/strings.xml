@@ -69,6 +69,7 @@
     <string name="privacy_open_failed">Could not open Privacy Policy.</string>
     <string name="share_message">Try BypassX VPN app.</string>
     <string name="logout_success">Logged out successfully.</string>
+    <string name="disconnect_vpn_first">First disconnect the VPN.</string>
     <string name="about_title">About BypassX</string>
     <string name="about_message">App Name: BypassX
 Version: 1.0.0

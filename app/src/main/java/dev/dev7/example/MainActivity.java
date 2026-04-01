@@ -360,6 +360,9 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
             if (itemId == R.id.nav_settings) {
+                if (isConnectionConfigLocked()) {
+                    Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
+                }
                 openSettingsPanel();
                 return true;
             }
@@ -491,6 +494,7 @@ public class MainActivity extends AppCompatActivity {
 
         proxyTetheringSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isConnectionConfigLocked()) {
+                Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
                 proxyTetheringSwitch.setChecked(sharedPreferences.getBoolean(PREF_PROXY_TETHERING_ENABLED, false));
                 return;
             }
@@ -548,6 +552,7 @@ public class MainActivity extends AppCompatActivity {
 
         splitTunnelSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isConnectionConfigLocked()) {
+                Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
                 splitTunnelSwitch.setChecked(sharedPreferences.getBoolean(PREF_SPLIT_TUNNEL_ENABLED, false));
                 return;
             }
@@ -952,6 +957,7 @@ public class MainActivity extends AppCompatActivity {
             iconView.setAlpha(enabled ? 1f : 0.6f);
             iconView.setOnClickListener(v -> {
                 if (isConnectionConfigLocked()) {
+                    Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 selectedPackageKey = packageKey;
@@ -1016,6 +1022,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showPackageSelectorDialog() {
         if (isConnectionConfigLocked()) {
+            Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -1038,6 +1045,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showBuiltInPackageDialog() {
         if (isConnectionConfigLocked()) {
+            Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -1074,6 +1082,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showCustomSniDialog() {
         if (isConnectionConfigLocked()) {
+            Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
             return;
         }
 
