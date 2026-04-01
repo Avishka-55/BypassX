@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,6 +27,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.LinearLayout;
+import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -72,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_NAME = "bypassx_prefs";
     private static final String PREF_SUBSCRIPTION_CACHE = "subscription_cache";
     private static final String PREF_SELECTED_PACKAGE_KEY = "selected_package_key";
+    private static final String PREF_CUSTOM_SNI = "custom_sni";
     private static final String PREF_LAST_SYNC_TIME = "last_sync_time";
     private static final String PREF_STATUS_CACHE_AVAILABLE = "status_cache_available";
     private static final String PREF_STATUS_CACHE_UNLIMITED = "status_cache_unlimited";
@@ -89,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int NETWORK_TIMEOUT_MS = 6000;
     private static final int AUTH_TIMEOUT_MS = 15000;
     private static final long STATUS_CHECK_INTERVAL_MS = 30000L;
+    private static final String CUSTOM_PACKAGE_KEY = "customsni";
     private static final Map<String, String> PACKAGE_SNI_BY_KEY = createPackageSniMap();
     private static final Map<String, String> PACKAGE_DISPLAY_NAMES = createPackageDisplayNames();
 
@@ -754,23 +758,37 @@ public class MainActivity extends AppCompatActivity {
 
     private static Map<String, String> createPackageSniMap() {
         Map<String, String> map = new HashMap<>();
-        map.put("facebook", "www.facebook.com");
         map.put("youtube", "www.youtube.com");
-        map.put("zoom", "www.zoom.us");
+        map.put("facebook", "www.facebook.com");
+        map.put("tiktok", "www.tiktok.com");
+        map.put("zoomnormal", "www.zoom.us");
+        map.put("zoomdialog", "www.aka.ms");
+        map.put("xtwitter", "www.x.com");
         map.put("instagram", "www.instagram.com");
         map.put("viber", "www.viber.com");
+        map.put("netflix", "www.netflix.com");
+        map.put("whatsapp", "www.whatsapp.com");
+        map.put("telegram", "web.telegram.org");
+        map.put("spotify", "open.spotify.com");
+        map.put("linkedin", "www.linkedin.com");
         return map;
     }
 
     private static Map<String, String> createPackageDisplayNames() {
         Map<String, String> map = new LinkedHashMap<>();
-        map.put("facebook", "Facebook");
         map.put("youtube", "YouTube");
-        map.put("zoom", "Zoom");
-        map.put("whatsapp", "WhatsApp");
+        map.put("facebook", "Facebook");
+        map.put("tiktok", "TikTok");
+        map.put("zoomnormal", "Zoom (Normal)");
+        map.put("zoomdialog", "Zoom (Dialog)");
+        map.put("xtwitter", "X (Twitter)");
+        map.put("instagram", "Instagram");
         map.put("viber", "Viber");
         map.put("netflix", "Netflix");
-        map.put("instagram", "Instagram");
+        map.put("whatsapp", "WhatsApp");
+        map.put("telegram", "Telegram");
+        map.put("spotify", "Spotify");
+        map.put("linkedin", "LinkedIn");
         return map;
     }
 
@@ -787,7 +805,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshPackageSelectionUi() {
-        String selectedLabel = PACKAGE_DISPLAY_NAMES.get(selectedPackageKey);
+        String selectedLabel;
+        if (CUSTOM_PACKAGE_KEY.equals(selectedPackageKey)) {
+            String customSni = sharedPreferences.getString(PREF_CUSTOM_SNI, "");
+            if (customSni != null && !customSni.trim().isEmpty()) {
+                selectedLabel = getString(R.string.package_custom_selected_format, customSni.trim());
+            } else {
+                selectedLabel = getString(R.string.package_custom_sni);
+            }
+        } else {
+            selectedLabel = PACKAGE_DISPLAY_NAMES.get(selectedPackageKey);
+        }
         if (selectedLabel == null || selectedLabel.trim().isEmpty()) {
             selectedPackageValue.setText(R.string.package_selected_none);
         } else {
@@ -797,6 +825,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showPackageSelectorDialog() {
+        if (isConnectionConfigLocked()) {
+            return;
+        }
+
+        String[] entryLabels = new String[]{
+                getString(R.string.package_source_builtin),
+                getString(R.string.package_source_custom_sni)
+        };
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.package_picker_title)
+                .setItems(entryLabels, (dialog, which) -> {
+                    if (which == 0) {
+                        showBuiltInPackageDialog();
+                    } else {
+                        showCustomSniDialog();
+                    }
+                })
+                .show();
+    }
+
+    private void showBuiltInPackageDialog() {
         if (isConnectionConfigLocked()) {
             return;
         }
@@ -830,6 +880,64 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    private void showCustomSniDialog() {
+        if (isConnectionConfigLocked()) {
+            return;
+        }
+
+        if (packageConfigs.isEmpty()) {
+            Toast.makeText(this, R.string.error_load_packages, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        input.setHint(R.string.custom_sni_hint);
+        String saved = sharedPreferences.getString(PREF_CUSTOM_SNI, "");
+        if (saved != null && !saved.trim().isEmpty()) {
+            input.setText(saved.trim());
+            input.setSelection(input.getText().length());
+        }
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.package_custom_sni)
+                .setView(input)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    String sni = normalizeSniInput(input.getText() == null ? "" : input.getText().toString());
+                    if (sni.isEmpty()) {
+                        Toast.makeText(this, R.string.error_custom_sni_required, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String baseConfig = packageConfigs.values().iterator().next();
+                    String customConfig = applySniOverride(baseConfig, sni);
+                    packageConfigs.put(CUSTOM_PACKAGE_KEY, ensurePackageRemark(customConfig, CUSTOM_PACKAGE_KEY));
+
+                    sharedPreferences.edit()
+                            .putString(PREF_CUSTOM_SNI, sni)
+                            .putString(PREF_SELECTED_PACKAGE_KEY, CUSTOM_PACKAGE_KEY)
+                            .apply();
+
+                    selectedPackageKey = CUSTOM_PACKAGE_KEY;
+                    refreshPackageSelectionUi();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private String normalizeSniInput(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String out = raw.trim().toLowerCase(Locale.US);
+        out = out.replace("https://", "").replace("http://", "");
+        int slash = out.indexOf('/');
+        if (slash >= 0) {
+            out = out.substring(0, slash);
+        }
+        return out.replaceAll("[^a-z0-9.-]", "");
     }
 
     private boolean isConnectionConfigLocked() {
@@ -941,6 +1049,13 @@ public class MainActivity extends AppCompatActivity {
     private void applyConfigs(Map<String, String> configs) {
         packageConfigs.clear();
         packageConfigs.putAll(configs);
+
+        String savedCustomSni = sharedPreferences.getString(PREF_CUSTOM_SNI, "");
+        if (savedCustomSni != null && !savedCustomSni.trim().isEmpty() && !packageConfigs.isEmpty()) {
+            String baseConfig = packageConfigs.values().iterator().next();
+            String customConfig = applySniOverride(baseConfig, savedCustomSni.trim());
+            packageConfigs.put(CUSTOM_PACKAGE_KEY, ensurePackageRemark(customConfig, CUSTOM_PACKAGE_KEY));
+        }
 
         if (selectedPackageKey != null && !packageConfigs.containsKey(selectedPackageKey)) {
             selectedPackageKey = null;
@@ -1084,6 +1199,13 @@ public class MainActivity extends AppCompatActivity {
         if (sni == null || sni.trim().isEmpty()) {
             return vlessLink;
         }
+        return applySniOverride(vlessLink, sni);
+    }
+
+    private String applySniOverride(String vlessLink, String sni) {
+        if (sni == null || sni.trim().isEmpty()) {
+            return vlessLink;
+        }
 
         String[] hashParts = vlessLink.split("#", 2);
         String base = hashParts[0];
@@ -1166,9 +1288,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String normalizePackageName(String packageName) {
         return packageName.toLowerCase(Locale.US)
-                .replace(" ", "")
-                .replace("-", "")
-                .replace("_", "");
+                .replaceAll("[^a-z0-9]", "");
     }
 
     private String getParsedPackagesDebugText(Map<String, String> configs) {
@@ -1176,17 +1296,8 @@ public class MainActivity extends AppCompatActivity {
             return getString(R.string.parsed_packages_none);
         }
 
-        Map<String, String> displayNames = new LinkedHashMap<>();
-        displayNames.put("facebook", "Facebook");
-        displayNames.put("youtube", "YouTube");
-        displayNames.put("zoom", "Zoom");
-        displayNames.put("whatsapp", "WhatsApp");
-        displayNames.put("viber", "Viber");
-        displayNames.put("netflix", "Netflix");
-        displayNames.put("instagram", "Instagram");
-
         List<String> loaded = new ArrayList<>();
-        for (Map.Entry<String, String> entry : displayNames.entrySet()) {
+        for (Map.Entry<String, String> entry : PACKAGE_DISPLAY_NAMES.entrySet()) {
             if (configs.containsKey(entry.getKey())) {
                 loaded.add(entry.getValue());
             }

@@ -8,7 +8,12 @@
     <string name="package_selector_button">Choose package</string>
     <string name="package_selected_none">Selected: none</string>
     <string name="package_selected_format">Selected: %1$s</string>
+    <string name="package_custom_selected_format">Custom SNI: %1$s</string>
     <string name="package_picker_title">Select package</string>
+    <string name="package_source_builtin">In-built Packages</string>
+    <string name="package_source_custom_sni">Custom SNI</string>
+    <string name="package_custom_sni">Custom SNI</string>
+    <string name="custom_sni_hint">e.g. www.example.com</string>
     <string name="loading_packages">Loading packages...</string>
     <string name="packages_loaded">Loaded %1$d packages</string>
     <string name="packages_loaded_cached">Loaded %1$d cached packages</string>
@@ -24,6 +29,7 @@
     <string name="subscription_expired">Expired</string>
     <string name="error_load_packages">Could not load packages, check connection</string>
     <string name="error_select_package_first">Please select a package first</string>
+    <string name="error_custom_sni_required">Enter a valid SNI hostname</string>
     <string name="connect">Power</string>
     <string name="ping">Ping</string>
     <string name="ping_idle">Ping: -</string>

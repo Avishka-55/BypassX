@@ -7,7 +7,8 @@ const panelBaseUrl = (() => {
 
 const panelUsername = process.env.XUI_USERNAME || process.env['3X_UI_USERNAME'] || '';
 const panelPassword = process.env.XUI_PASSWORD || process.env['3X_UI_PASSWORD'] || '';
-const inboundId = Number.parseInt(process.env.XUI_INBOUND_ID || '1', 10);
+const inboundIdRaw = process.env.XUI_INBOUND_ID || process.env['3X_UI_INBOUND_ID'] || '';
+const inboundId = Number.parseInt(inboundIdRaw, 10);
 const quotaGb = Number.parseInt(process.env.XUI_DEFAULT_QUOTA_GB || '10', 10);
 const expiryDays = Number.parseInt(process.env.XUI_DEFAULT_EXPIRY_DAYS || '10', 10);
 const subPath = process.env.XUI_SUB_PATH || '/sub/';
@@ -68,7 +69,7 @@ class XuiApiClient {
   }
 
   isConfigured() {
-    return Boolean(panelBaseUrl && panelUsername && panelPassword && Number.isInteger(inboundId));
+    return Boolean(panelBaseUrl && panelUsername && panelPassword && Number.isInteger(inboundId) && inboundId > 0);
   }
 
   buildUrl(path) {
