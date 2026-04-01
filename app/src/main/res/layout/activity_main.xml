@@ -75,11 +75,11 @@
 
                             <ImageView
                                 android:id="@+id/selected_package_icon"
-                                android:layout_width="38dp"
-                                android:layout_height="38dp"
+                                android:layout_width="50dp"
+                                android:layout_height="50dp"
                                 android:background="@drawable/bg_package_icon_chip"
                                 android:contentDescription="@string/package_selector_title"
-                                android:padding="7dp"
+                                android:padding="8dp"
                                 android:src="@drawable/ic_pkg_default" />
 
                             <TextView
