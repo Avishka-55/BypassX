@@ -41,9 +41,9 @@ public class AuthActivity extends AppCompatActivity {
     private MaterialButton loginToggleButton;
     private MaterialButton registerToggleButton;
     private MaterialButton sendOtpButton;
-    private MaterialButton editRegisterDetailsButton;
     private MaterialButton submitButton;
     private MaterialButton checkStatusButton;
+    private TextView editRegisterDetailsHint;
     private TextView switchHintText;
     private TextView authStatusText;
     private TextView registerStepText;
@@ -88,9 +88,9 @@ public class AuthActivity extends AppCompatActivity {
         loginToggleButton = findViewById(R.id.auth_toggle_login);
         registerToggleButton = findViewById(R.id.auth_toggle_register);
         sendOtpButton = findViewById(R.id.auth_send_otp_button);
-        editRegisterDetailsButton = findViewById(R.id.auth_edit_register_details_button);
         submitButton = findViewById(R.id.auth_submit_button);
         checkStatusButton = findViewById(R.id.auth_check_status_button);
+        editRegisterDetailsHint = findViewById(R.id.auth_edit_register_details_hint);
         switchHintText = findViewById(R.id.auth_switch_hint);
         authStatusText = findViewById(R.id.auth_status_text);
         registerStepText = findViewById(R.id.auth_register_step_text);
@@ -112,7 +112,7 @@ public class AuthActivity extends AppCompatActivity {
 
         submitButton.setOnClickListener(v -> submitAuth());
         sendOtpButton.setOnClickListener(v -> sendRegisterOtp());
-        editRegisterDetailsButton.setOnClickListener(v -> {
+        editRegisterDetailsHint.setOnClickListener(v -> {
             isRegisterOtpStep = false;
             updateModeUi();
         });
@@ -138,7 +138,7 @@ public class AuthActivity extends AppCompatActivity {
         confirmPasswordInputLayout.setVisibility(showRegisterDetails ? View.VISIBLE : View.GONE);
         otpInputLayout.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
         sendOtpButton.setVisibility(showRegisterDetails ? View.VISIBLE : View.GONE);
-        editRegisterDetailsButton.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
+        editRegisterDetailsHint.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
         registerStepText.setVisibility(showRegisterOtpStep ? View.VISIBLE : View.GONE);
         if (showRegisterOtpStep) {
             registerStepText.setText(getString(R.string.auth_register_step_verify_format, emailForStepText()));
@@ -242,7 +242,7 @@ public class AuthActivity extends AppCompatActivity {
         authProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
         submitButton.setEnabled(!loading);
         sendOtpButton.setEnabled(!loading);
-        editRegisterDetailsButton.setEnabled(!loading);
+        editRegisterDetailsHint.setEnabled(!loading);
         loginToggleButton.setEnabled(!loading);
         registerToggleButton.setEnabled(!loading);
         checkStatusButton.setEnabled(!loading);

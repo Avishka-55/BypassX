@@ -10,4 +10,10 @@
         <item name="android:navigationBarColor">@color/screen_background</item>
         <item name="android:windowBackground">@color/screen_background</item>
     </style>
+
+    <style name="TextAppearance.BypassX.DrawerItem" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="fontFamily">sans-serif-medium</item>
+    </style>
 </resources>

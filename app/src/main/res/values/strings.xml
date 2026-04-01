@@ -166,6 +166,7 @@ Powered by Xray Core</string>
     <string name="auth_otp_hint">Email verification code</string>
     <string name="auth_send_otp_button">Send Code</string>
     <string name="auth_edit_details_button">Edit Details</string>
+    <string name="auth_edit_details_hint">Click edit details</string>
     <string name="auth_register_step_verify_format">Code sent to %1$s. Enter the code to complete registration.</string>
     <string name="auth_send_code_first">Please send verification code first</string>
     <string name="auth_login_button">Login</string>

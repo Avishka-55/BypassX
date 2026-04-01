@@ -253,16 +253,17 @@
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
-        android:layout_width="280dp"
+        android:layout_width="296dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/card_background"
         app:headerLayout="@layout/nav_header"
         app:itemBackground="@drawable/nav_item_background"
-        app:itemHorizontalPadding="14dp"
-        app:itemIconPadding="12dp"
-        app:itemIconSize="20dp"
+        app:itemHorizontalPadding="18dp"
+        app:itemIconPadding="16dp"
+        app:itemIconSize="22dp"
         app:itemIconTint="@color/nav_item_icon_tint"
+        app:itemTextAppearance="@style/TextAppearance.BypassX.DrawerItem"
         app:itemTextColor="@color/nav_item_text_color"
         app:menu="@menu/drawer_menu" />
 
