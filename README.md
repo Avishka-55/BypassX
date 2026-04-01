@@ -1,125 +1,163 @@
-# BypassX VPN Client
+# BypassX
 
-BypassX is an Android VPN client built on top of the Xray core through the `v2ray` module in this repository. It provides a practical Java-based sample app with a modern UI, subscription config loading, proxy tethering, split tunnel support, and a dedicated About screen.
+BypassX is an Android VPN client with a Node.js backend and 3x-ui integration.
 
-## Highlights
+It supports per-user provisioning on 3x-ui, approval-based onboarding, subscription-driven config loading, built-in app packages with SNI override, Custom SNI mode, split tunnel, and proxy tethering.
 
-- VPN client powered by Xray core
-- Java Android app with Material UI
-- Subscription-based config loading from a remote source
-- Package selection dashboard for supported apps
-- Ping check directly inside the main action button
-- Proxy tethering panel for hotspot sharing
-- Split tunnel support for excluding selected apps from VPN
-- Foreground service notification with stable behavior
-- Dedicated About screen and branded drawer header
+## Architecture
 
-## Screens
+This repository contains three main parts:
 
-- Main dashboard for connection control and package selection
-- About screen with app information
-- Navigation drawer with proxy tethering and split tunnel controls
-- Foreground VPN notification for connection status
+- `app/`: Android app (Java + Material UI)
+- `backend-mern-auth-main/`: Auth + approval backend (Express + MongoDB)
+- `v2ray/`: Embedded V2Ray/Xray Android module
 
-## Requirements
+High-level flow:
 
-- Android Studio latest stable version
-- JDK 8 or later
-- Android SDK 34
-- Android device or emulator running Android 8.0+
-- Internet access for subscription loading and VPN usage
+1. User registers in app.
+2. Admin approves/rejects via emailed action link.
+3. On approval, backend creates a user client in 3x-ui inbound.
+4. Backend returns user-specific `subscriptionUrl` at login.
+5. App downloads the subscription, parses VLESS links, and generates package configs.
+6. App applies package SNI/host override before connecting.
 
-## Project Structure
+## Key Features
 
-- `app/` - Main Android application
-- `v2ray/` - Xray/V2ray library module and services
-- `BypassX.png` - App logo asset used by the project
-- `connected.jpeg` / `disconnected.jpg` - Sample screenshots
+### Authentication and Approval
 
-## Build Setup
+- Login/Register with email OTP verification.
+- Pending/Active/Rejected account states.
+- Admin approval by secure token link.
 
-The project already includes the required Gradle and module configuration.
+### 3x-ui User Provisioning
 
-### Open in Android Studio
+- Creates one client per approved user.
+- Stores user metadata (`xuiSubId`, client email/id, quota, expiry, subscription URL).
+- Fetches traffic status for remaining data and expiry display.
 
-1. Clone this repository.
-2. Open it in Android Studio.
-3. Let Gradle sync finish.
-4. Build or run the `app` module on a device or emulator.
+### Modern Main UI
 
-### Command Line Build
+- Compact package chooser.
+- Built-in package list and Custom SNI entry.
+- Remaining data + expiry cards (cache-first, online refresh).
+- Connection state, ping, and polished dashboard visuals.
 
-```bash
-./gradlew assembleDebug
-```
+### Networking Features
 
-To create a release build:
+- VPN connect/disconnect via V2Ray service.
+- Split Tunnel app exclusion.
+- Proxy Tethering mode and panel.
+- Quick Settings tile support.
 
-```bash
-./gradlew assembleRelease
-```
+## Built-in Packages (SNI)
 
-## Runtime Configuration
+- YouTube -> `www.youtube.com`
+- Facebook -> `www.facebook.com`
+- TikTok -> `www.tiktok.com`
+- Zoom (Normal) -> `www.zoom.us`
+- Zoom (Dialog) -> `www.aka.ms`
+- X (Twitter) -> `www.x.com`
+- Instagram -> `www.instagram.com`
+- Viber -> `www.viber.com`
+- Netflix -> `www.netflix.com`
+- WhatsApp -> `www.whatsapp.com`
+- Telegram -> `web.telegram.org`
+- Spotify -> `open.spotify.com`
+- LinkedIn -> `www.linkedin.com`
 
-The app reads the subscription URL from the root `.env` file.
+Also available:
 
-Example:
+- `Custom SNI` option in package picker (user-entered hostname).
+
+## Environment Configuration
+
+No server-specific values are hardcoded for XUI provisioning; backend behavior is driven by env values.
+
+### Root `.env` (Android build-time)
 
 ```env
-SUBSCRIPTION_URL=https://example.com/subscription.txt
+SUBSCRIPTION_URL=https://example.com/sub.txt
+AUTH_BASE_URL=https://your-auth-backend.example.com
+ADMIN_PIN=2468
+APP_PIN=1994
 ```
 
-If the value is empty, the app will still build, but subscription loading will not work until you set a valid URL.
+### `backend-mern-auth-main/.env`
 
-## How to Use
+```env
+PORT=4000
+MONGODB_URL=mongodb+srv://...
+JWT_SECRET=...
+BREVO_API_KEY=...
+SENDER_EMAIL=...
+ADMIN_APPROVAL_EMAIL=...
 
-1. Launch the app.
-2. Wait for subscription configs to load.
-3. Select one of the supported packages.
-4. Tap the large Power button to connect.
-5. Use the Ping button to test latency directly on the button itself.
-6. Open the drawer to access Proxy Tethering and Split Tunnel.
-7. Open About from the drawer for app details.
+XUI_PANEL_URL=https://panel.example.com:PORT/PANELPATH
+XUI_USERNAME=...
+XUI_PASSWORD=...
+XUI_INBOUND_ID=1
+XUI_DEFAULT_QUOTA_GB=10
+XUI_DEFAULT_EXPIRY_DAYS=10
+XUI_SUB_PATH=/sub/
+XUI_SUB_URI=
 
-## Supported Features
+BACKEND_PUBLIC_URL=https://your-public-backend.example.com
+NODE_ENV=production
+```
 
-### Package Selection
-The main screen displays a set of supported app targets such as YouTube, Zoom, WhatsApp, Viber, Netflix, and Instagram. Select one before connecting.
+Notes:
 
-### Ping Check
-The Ping button runs a quick connectivity test and shows the result directly inside the button text.
+- `XUI_SUB_URI` can be left empty. If set, it overrides generated subscription base URL.
+- Ensure subscription port/path is reachable from mobile clients (firewall/UFW/CDN rules).
 
-### Proxy Tethering
-The side drawer includes a proxy tethering panel with hotspot-related controls and logging for sharing the VPN connection.
+## Build and Run
 
-### Split Tunnel
-The side drawer also includes split tunnel support so selected apps can bypass the VPN and use direct internet.
+### Android
 
-### Notification Behavior
-The VPN service runs as a foreground service and keeps the notification stable while removing traffic speed meter updates from the notification bar.
+```bash
+./gradlew :app:assembleDebug
+```
 
-## App Icon and Branding
+### Backend
 
-The app uses the custom `BypassX.png` logo asset as the launcher icon and branding image in the app UI.
+```bash
+cd backend-mern-auth-main
+npm install
+npm start
+```
 
-## Sample Screenshots
+## CI/CD
 
-<p align="center">
-  <img src="connected.jpeg" alt="Connected state" width="32%" />
-  <img src="disconnected.jpg" alt="Disconnected state" width="32%" />
-</p>
+GitHub Actions workflow builds Android and writes both root and backend `.env` files from repository secrets.
 
-## Libraries and Credits
+Primary workflow file:
+
+- `.github/workflows/android-build.yml`
+
+## Troubleshooting
+
+### Remaining/Expiry visible but packages not loading
+
+Common cause: app cannot fetch subscription URL from device network.
+
+Checklist:
+
+1. Subscription URL is reachable over internet from phone.
+2. Correct port is open in firewall/UFW.
+3. TLS certificate is valid for subscription host.
+4. User login response contains valid `subscriptionUrl`.
+
+### App says frequent background refresh
+
+Expected to some degree while VPN service is active (foreground service + traffic/status broadcasts). If needed, polling intervals can be tuned.
+
+## Credits
 
 - [Xray core](https://github.com/XTLS/Xray-core)
 - [AndroidLibXrayLite](https://github.com/2dust/AndroidLibXrayLite)
-- [vpnparser](https://github.com/gvcgo/vpnparser)
 
-## Notes
+## Disclaimer
 
-- This project uses a foreground VPN service and requires the appropriate Android VPN permissions.
-- Traffic statistics in the notification bar are disabled in the current build for a cleaner experience.
-- The project is intended as a functional sample and starting point for further development.
--This project for Education purpose Only.
+This project is for educational purposes only.
 
 
