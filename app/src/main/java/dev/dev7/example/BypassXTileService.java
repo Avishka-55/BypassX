@@ -258,11 +258,18 @@ public class BypassXTileService extends TileService {
         androidPackageNames.put("facebook", "com.facebook.katana");
         androidPackageNames.put("youtube", "com.google.android.youtube");
         androidPackageNames.put("youtube_revanced", "app.revanced.android.youtube");
-        androidPackageNames.put("zoom", "us.zoom.videomeetings");
+        androidPackageNames.put("zoom", "us.zoom.videomeetings"); // backward compatibility key
+        androidPackageNames.put("zoomnormal", "us.zoom.videomeetings");
+        androidPackageNames.put("zoomdialog", "us.zoom.videomeetings");
         androidPackageNames.put("whatsapp", "com.whatsapp");
         androidPackageNames.put("viber", "com.viber.voip");
         androidPackageNames.put("netflix", "com.netflix.mediaclient");
         androidPackageNames.put("instagram", "com.instagram.android");
+        androidPackageNames.put("telegram", "org.telegram.messenger");
+        androidPackageNames.put("spotify", "com.spotify.music");
+        androidPackageNames.put("linkedin", "com.linkedin.android");
+        androidPackageNames.put("xtwitter", "com.twitter.android");
+        androidPackageNames.put("tiktok", "com.zhiliaoapp.musically");
     }
 
     private ArrayList<String> getBlockedApplicationsList(SharedPreferences prefs) {
@@ -360,7 +367,7 @@ public class BypassXTileService extends TileService {
 
         if (parsedConfigs.isEmpty() && !candidateVlessLinks.isEmpty()) {
             String baseLink = candidateVlessLinks.get(0);
-            for (String packageKey : androidPackageNames.keySet()) {
+            for (String packageKey : PACKAGE_SNI_BY_KEY.keySet()) {
                 String tagged = ensurePackageRemark(baseLink, packageKey);
                 parsedConfigs.put(packageKey, applyPackageOverrides(tagged, packageKey));
             }
@@ -404,11 +411,20 @@ public class BypassXTileService extends TileService {
 
     private static Map<String, String> createPackageSniMap() {
         Map<String, String> map = new HashMap<>();
-        map.put("facebook", "www.facebook.com");
         map.put("youtube", "www.youtube.com");
-        map.put("zoom", "www.zoom.us");
+        map.put("facebook", "www.facebook.com");
+        map.put("tiktok", "www.tiktok.com");
+        map.put("zoom", "www.zoom.us"); // backward compatibility key
+        map.put("zoomnormal", "www.zoom.us");
+        map.put("zoomdialog", "www.aka.ms");
+        map.put("xtwitter", "www.x.com");
         map.put("instagram", "www.instagram.com");
         map.put("viber", "www.viber.com");
+        map.put("netflix", "www.netflix.com");
+        map.put("whatsapp", "www.whatsapp.com");
+        map.put("telegram", "web.telegram.org");
+        map.put("spotify", "open.spotify.com");
+        map.put("linkedin", "www.linkedin.com");
         return map;
     }
 
@@ -488,8 +504,6 @@ public class BypassXTileService extends TileService {
 
     private String normalizePackageName(String packageName) {
         return packageName.toLowerCase(Locale.US)
-                .replace(" ", "")
-                .replace("-", "")
-                .replace("_", "");
+                .replaceAll("[^a-z0-9]", "");
     }
 }
