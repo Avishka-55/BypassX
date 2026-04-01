@@ -14,6 +14,12 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.ActivityNotFoundException;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
@@ -38,6 +44,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.appbar.MaterialToolbar;
@@ -127,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView selectedPackageValue;
     private TextView remainingDataValue;
     private TextView expiryDateValue;
+    private NestedScrollView mainScrollContainer;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private MaterialToolbar topToolbar;
@@ -181,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         selectedPackageValue = findViewById(R.id.selected_package_value);
         remainingDataValue = findViewById(R.id.remaining_data_value);
         expiryDateValue = findViewById(R.id.expiry_date_value);
+        mainScrollContainer = findViewById(R.id.main_scroll_container);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         topToolbar = findViewById(R.id.top_toolbar);
@@ -195,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
 
         initializeAndroidPackageNames();
         setupGreeting();
+        configureMainScrollBehavior();
         setupConnectButtonGlow();
         setupNavigationDrawer();
         setupProxyTetheringPanel();
@@ -229,6 +239,18 @@ public class MainActivity extends AppCompatActivity {
         connectGlowAnimator.setInterpolator(new LinearInterpolator());
         connectGlowAnimator.setRepeatCount(ValueAnimator.INFINITE);
         connectGlowAnimator.setRepeatMode(ValueAnimator.RESTART);
+    }
+
+    private void configureMainScrollBehavior() {
+        if (mainScrollContainer == null) {
+            return;
+        }
+        boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+        mainScrollContainer.setFillViewport(!isLandscape);
+        mainScrollContainer.setNestedScrollingEnabled(true);
+        if (isLandscape) {
+            mainScrollContainer.post(() -> mainScrollContainer.scrollTo(0, 0));
+        }
     }
 
     private void updateConnectButtonGlow(V2rayConstants.CONNECTION_STATES state) {
@@ -916,7 +938,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
                 FrameLayout iconHolder = new FrameLayout(this);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(40), dp(40));
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(46), dp(46));
                 params.setMarginEnd(dp(8));
                 iconHolder.setLayoutParams(params);
 
@@ -926,7 +948,7 @@ public class MainActivity extends AppCompatActivity {
                     FrameLayout.LayoutParams.MATCH_PARENT
                 );
                 iconView.setLayoutParams(iconParams);
-            iconView.setPadding(dp(6), dp(6), dp(6), dp(6));
+            iconView.setPadding(dp(7), dp(7), dp(7), dp(7));
             iconView.setImageDrawable(resolvePackageIconDrawable(packageKey));
             iconView.setBackgroundResource(packageKey.equals(selectedPackageKey)
                     ? R.drawable.bg_package_icon_chip_selected
@@ -987,11 +1009,67 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        return ContextCompat.getDrawable(this, R.drawable.ic_pkg_default);
+        return createPackageMonogramDrawable(packageKey);
     }
 
     private int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density);
+    }
+
+    private android.graphics.drawable.Drawable createPackageMonogramDrawable(String packageKey) {
+        int sizePx = dp(24);
+        Bitmap bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bgPaint.setColor(resolveFallbackColor(packageKey));
+        canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, bgPaint);
+
+        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(ContextCompat.getColor(this, R.color.text_primary));
+        textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(sizePx * 0.42f);
+
+        String label = resolveFallbackLabel(packageKey);
+        Paint.FontMetrics metrics = textPaint.getFontMetrics();
+        float baseline = (sizePx / 2f) - ((metrics.ascent + metrics.descent) / 2f);
+        canvas.drawText(label, sizePx / 2f, baseline, textPaint);
+
+        return new BitmapDrawable(getResources(), bitmap);
+    }
+
+    private String resolveFallbackLabel(String packageKey) {
+        if ("youtube".equals(packageKey)) return "Y";
+        if ("facebook".equals(packageKey)) return "F";
+        if ("tiktok".equals(packageKey)) return "T";
+        if ("zoomnormal".equals(packageKey)) return "N";
+        if ("zoomdialog".equals(packageKey)) return "D";
+        if ("xtwitter".equals(packageKey)) return "X";
+        if ("instagram".equals(packageKey)) return "I";
+        if ("viber".equals(packageKey)) return "V";
+        if ("netflix".equals(packageKey)) return "N";
+        if ("whatsapp".equals(packageKey)) return "W";
+        if ("telegram".equals(packageKey)) return "T";
+        if ("spotify".equals(packageKey)) return "S";
+        if ("linkedin".equals(packageKey)) return "L";
+        return "?";
+    }
+
+    private int resolveFallbackColor(String packageKey) {
+        if ("youtube".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_youtube);
+        if ("facebook".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_facebook);
+        if ("zoomnormal".equals(packageKey) || "zoomdialog".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_zoom);
+        if ("whatsapp".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_whatsapp);
+        if ("viber".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_viber);
+        if ("netflix".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_netflix);
+        if ("instagram".equals(packageKey)) return ContextCompat.getColor(this, R.color.icon_instagram);
+        if ("spotify".equals(packageKey)) return ContextCompat.getColor(this, R.color.connect_connected);
+        if ("telegram".equals(packageKey)) return ContextCompat.getColor(this, R.color.accent_cyan);
+        if ("linkedin".equals(packageKey)) return ContextCompat.getColor(this, R.color.connect_connecting);
+        if ("xtwitter".equals(packageKey)) return ContextCompat.getColor(this, R.color.text_secondary);
+        if ("tiktok".equals(packageKey)) return ContextCompat.getColor(this, R.color.panel_dark_soft);
+        return ContextCompat.getColor(this, R.color.card_selected_background);
     }
 
     private void showPackageSelectorDialog() {
@@ -1757,6 +1835,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        configureMainScrollBehavior();
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
         fetchSubscriptionStatus();
