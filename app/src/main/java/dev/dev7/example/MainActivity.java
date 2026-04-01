@@ -859,7 +859,7 @@ public class MainActivity extends AppCompatActivity {
         map.put("facebook", "www.facebook.com");
         map.put("tiktok", "www.tiktok.com");
         map.put("zoomnormal", "www.zoom.us");
-        map.put("zoomdialog", "www.aka.ms");
+        map.put("zoomdialog", "aka.ms");
         map.put("xtwitter", "www.x.com");
         map.put("instagram", "www.instagram.com");
         map.put("viber", "www.viber.com");
