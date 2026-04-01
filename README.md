@@ -49,6 +49,20 @@ High-level flow:
 - Proxy Tethering mode and panel.
 - Quick Settings tile support.
 
+## App Screenshots
+
+### Login Screen
+
+![Login Screen](app/login.jpeg)
+
+### Connected State
+
+![Connected Screen](app/connected.jpeg)
+
+### Disconnected State
+
+![Disconnected Screen](app/disconnected.jpeg)
+
 ## Built-in Packages (SNI)
 
 - YouTube -> `www.youtube.com`
