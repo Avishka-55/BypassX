@@ -1133,7 +1133,7 @@ public class MainActivity extends AppCompatActivity {
                 pingButton.setEnabled(true);
                 if (result.success) {
                     pingButton.setText(getString(R.string.ping_success, result.latencyMs));
-                    pingIpStatus.setText(getString(R.string.ping_ip_value, result.publicIp));
+                    pingIpStatus.setText(getString(R.string.ping_ip_value, result.location));
                 } else {
                     pingButton.setText(R.string.ping_failed);
                     pingIpStatus.setText(R.string.ping_ip_failed);
@@ -1151,11 +1151,11 @@ public class MainActivity extends AppCompatActivity {
             return new PingResult(false, "0", "-");
         }
 
-        String publicIp = fetchPublicIpThroughProxy();
-        if (publicIp == null || publicIp.trim().isEmpty()) {
-            publicIp = "-";
+        String location = fetchLocationThroughProxy();
+        if (location == null || location.trim().isEmpty()) {
+            location = "-";
         }
-        return new PingResult(true, String.valueOf(latencyMs), publicIp);
+        return new PingResult(true, String.valueOf(latencyMs), location);
     }
 
     private long measureProxyHttpDelay(String testUrl) {
@@ -1186,7 +1186,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String fetchPublicIpThroughProxy() {
+    private String fetchLocationThroughProxy() {
         HttpURLConnection connection = null;
         try {
             Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(LOCAL_PROXY_HOST, LOCAL_SOCKS_PORT));
@@ -1206,13 +1206,16 @@ public class MainActivity extends AppCompatActivity {
                 byte[] bytes = readFully(inputStream);
                 String json = new String(bytes);
                 JSONObject jsonObject = new JSONObject(json);
-                String ip = firstNonEmpty(
-                        jsonObject.optString("ip", ""),
-                        jsonObject.optString("client_ip", ""),
-                        jsonObject.optString("ip_addr", ""),
-                        jsonObject.optString("query", "")
+                String location = firstNonEmpty(
+                        jsonObject.optString("country", ""),
+                        jsonObject.optString("country_name", ""),
+                        jsonObject.optString("region", ""),
+                        jsonObject.optString("city", "")
                 );
-                return ip == null ? null : ip.trim();
+                if (location == null || location.trim().isEmpty()) {
+                    return null;
+                }
+                return location.trim();
             }
         } catch (Exception ignored) {
             return null;
@@ -2239,12 +2242,12 @@ public class MainActivity extends AppCompatActivity {
     private static final class PingResult {
         private final boolean success;
         private final String latencyMs;
-        private final String publicIp;
+        private final String location;
 
-        private PingResult(boolean success, String latencyMs, String publicIp) {
+        private PingResult(boolean success, String latencyMs, String location) {
             this.success = success;
             this.latencyMs = latencyMs;
-            this.publicIp = publicIp;
+            this.location = location;
         }
     }
 }

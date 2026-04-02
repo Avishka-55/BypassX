@@ -37,11 +37,11 @@
     <string name="ping_connect_first">Connect first!</string>
     <string name="ping_success">Ping: %1$sms ✅</string>
     <string name="ping_failed">Ping failed ❌</string>
-    <string name="ping_ip_idle">IP: -</string>
-    <string name="ping_ip_loading">IP: checking...</string>
-    <string name="ping_ip_connect_first">IP: connect first</string>
-    <string name="ping_ip_value">IP: %1$s</string>
-    <string name="ping_ip_failed">IP: unavailable</string>
+    <string name="ping_ip_idle">Location: -</string>
+    <string name="ping_ip_loading">Location: checking...</string>
+    <string name="ping_ip_connect_first">Location: connect first</string>
+    <string name="ping_ip_value">Location: %1$s</string>
+    <string name="ping_ip_failed">Location: unavailable</string>
     <string name="not_connected">Not Connected</string>
     <string name="connecting">Connecting...</string>
     <string name="connected">Connected ✓</string>
