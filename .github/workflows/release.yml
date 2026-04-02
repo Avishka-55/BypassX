@@ -50,6 +50,9 @@ jobs:
           echo "SUBSCRIPTION_URL=${{ secrets.SUBSCRIPTION_URL }}" > .env
           echo "AUTH_BASE_URL=${{ secrets.AUTH_BASE_URL }}" >> .env
 
+      - name: Remove broken launcher PNG for CI
+        run: rm -f app/src/main/res/drawable/ic_launcher.png
+
       - name: Assemble release APK
         run: ./gradlew :app:assembleRelease
 
