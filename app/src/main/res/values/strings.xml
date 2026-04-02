@@ -141,7 +141,7 @@ BypassX © 2026</string>
     <string name="proxy_tethering_log_socks">SOCKS5 port: %1$d</string>
     <string name="proxy_tethering_log_http">HTTP port: %1$d</string>
     <string name="proxy_tethering_log_start_hint">Start from main button to launch service.</string>
-    <string name="proxy_tethering_hotspot_note">Hotspot must be turned on manually due Android restrictions.</string>
+    <string name="proxy_tethering_hotspot_note">Hotspot must be turned on manually\nto use this feature.</string>
     <string name="proxy_tethering_settings_unavailable">Could not open hotspot settings.</string>
     <string name="proxy_tethering_live_title">[Live Status]</string>
     <string name="proxy_tethering_log_time">Time: %1$s</string>

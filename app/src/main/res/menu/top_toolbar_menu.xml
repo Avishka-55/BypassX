@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/action_proxy_tethering"
-        android:icon="@drawable/ic_proxy_panel"
+        android:icon="@drawable/ic_menu_settings_bx"
         android:title="@string/menu_proxy_tethering"
         app:showAsAction="always" />
 </menu>

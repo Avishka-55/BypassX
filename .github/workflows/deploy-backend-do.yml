@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/3x-ui
+      - feature/setting-slide
     paths:
       - "backend-mern-auth-main/**"
       - ".github/workflows/deploy-backend-do.yml"
@@ -35,8 +36,17 @@ jobs:
       - name: Upload backend source
         run: |
           rsync -az --delete \
+            --delete-excluded \
             --exclude "node_modules" \
             --exclude ".env" \
+            --exclude ".env.*" \
+            --exclude ".git" \
+            --exclude ".gitignore" \
+            --exclude "*.log" \
+            --exclude "npm-debug.log*" \
+            --exclude "yarn-debug.log*" \
+            --exclude "yarn-error.log*" \
+            --exclude ".DS_Store" \
             -e "ssh -p ${{ vars.DO_SSH_PORT || 22 }}" \
             backend-mern-auth-main/ \
             "${{ vars.DO_USER }}@${{ vars.DO_HOST }}:${{ vars.DO_DEPLOY_PATH }}/"
@@ -83,10 +93,13 @@ jobs:
           cd "$DEPLOY_PATH"
 
           if [ -f package-lock.json ]; then
-            npm ci --omit=dev
+            npm ci --omit=dev --no-audit --no-fund
           else
-            npm install --omit=dev
+            npm install --omit=dev --no-audit --no-fund
           fi
+
+          npm cache clean --force >/dev/null 2>&1 || true
+          find "$DEPLOY_PATH" -maxdepth 1 -type f \( -name "*.log" -o -name "npm-debug.log*" -o -name "yarn-*.log*" \) -delete || true
 
           cat > "/etc/systemd/system/${SERVICE_NAME}.service" <<SERVICE
           [Unit]

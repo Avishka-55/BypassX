@@ -325,7 +325,28 @@
         android:layout_gravity="end"
         android:background="@color/card_background"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="148dp"
+            android:background="@drawable/bg_nav_header"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/menu_settings"
+                android:textColor="@color/text_primary"
+                android:textSize="30sp"
+                android:fontFamily="sans-serif-thin"
+                android:alpha="0.9"
+                android:textStyle="normal" />
+        </LinearLayout>
 
         <ScrollView
             android:layout_width="match_parent"
@@ -335,7 +356,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="16dp">
 
                 <!-- Split Tunnel Section -->
                 <TextView
@@ -343,8 +365,9 @@
                     android:layout_height="wrap_content"
                     android:text="@string/split_tunnel_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textSize="17sp"
+                    android:textStyle="normal"
+                    android:fontFamily="sans-serif-medium" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/split_tunnel_switch"
@@ -352,7 +375,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/split_tunnel_enable"
-                    android:textColor="@color/text_primary" />
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="match_parent"
@@ -362,12 +387,18 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
-                <LinearLayout
-                    android:id="@+id/split_tunnel_apps_container"
+                <ScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:orientation="vertical" />
+                    android:layout_height="228dp"
+                    android:scrollbars="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/split_tunnel_apps_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </ScrollView>
 
                 <TextView
                     android:id="@+id/split_tunnel_status"
@@ -376,7 +407,8 @@
                     android:layout_marginTop="12dp"
                     android:text="@string/split_tunnel_no_apps"
                     android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
+                    android:textSize="11sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <!-- Divider -->
                 <View
@@ -384,7 +416,7 @@
                     android:layout_height="1dp"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="16dp"
-                    android:background="@color/text_secondary" />
+                    android:background="@color/panel_stroke" />
 
                 <!-- Proxy Tethering Section -->
                 <TextView
@@ -392,8 +424,9 @@
                     android:layout_height="wrap_content"
                     android:text="@string/proxy_tethering_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textSize="17sp"
+                    android:textStyle="normal"
+                    android:fontFamily="sans-serif-medium" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/proxy_tethering_switch"
@@ -401,7 +434,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="@string/proxy_tethering_enable"
-                    android:textColor="@color/text_primary" />
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/proxy_hotspot_settings_button"
@@ -411,7 +446,9 @@
                     android:text="@string/proxy_tethering_open_hotspot_settings"
                     android:textAllCaps="false"
                     android:textColor="@color/text_primary"
-                    app:backgroundTint="@color/card_selected_background" />
+                    android:fontFamily="sans-serif-medium"
+                    app:backgroundTint="@color/card_selected_background"
+                    app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/proxy_guide_button"
@@ -421,29 +458,27 @@
                     android:text="@string/proxy_tethering_show_guide"
                     android:textAllCaps="false"
                     android:textColor="@color/text_primary"
-                    app:backgroundTint="@color/card_selected_background" />
+                    android:fontFamily="sans-serif-medium"
+                    app:backgroundTint="@color/card_selected_background"
+                    app:cornerRadius="12dp" />
 
-                <HorizontalScrollView
+                <ScrollView
                     android:layout_width="match_parent"
                     android:layout_height="200dp"
                     android:layout_marginTop="12dp"
-                    android:scrollbars="horizontal">
+                    android:scrollbars="vertical">
 
-                    <ScrollView
+                    <TextView
+                        android:id="@+id/proxy_log_text"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scrollbars="vertical">
-
-                        <TextView
-                            android:id="@+id/proxy_log_text"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:text="@string/proxy_tethering_log_header"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
-                    </ScrollView>
-                </HorizontalScrollView>
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/proxy_tethering_log_header"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:lineSpacingExtra="2dp"
+                        android:breakStrategy="high_quality" />
+                </ScrollView>
             </LinearLayout>
         </ScrollView>
     </LinearLayout>

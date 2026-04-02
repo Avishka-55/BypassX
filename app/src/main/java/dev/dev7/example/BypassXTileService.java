@@ -281,12 +281,20 @@ public class BypassXTileService extends TileService {
 
         String[] parts = saved.split("\\|");
         for (String part : parts) {
-            String[] kv = part.split(":");
+            String[] kv = part.split(":", 2);
             if (kv.length != 2) {
                 continue;
             }
-            String androidPkg = androidPackageNames.get(kv[0]);
-            if (androidPkg != null) {
+            String key = kv[0].trim();
+            if (key.isEmpty()) {
+                continue;
+            }
+
+            String androidPkg = androidPackageNames.get(key);
+            if (androidPkg == null || androidPkg.trim().isEmpty()) {
+                androidPkg = key;
+            }
+            if (androidPkg.contains(".")) {
                 blockedApps.add(androidPkg);
             }
         }

@@ -5,9 +5,9 @@ env:
 
 on:
   push:
-    branches: [ "main", "feature/mern-auth", "feature/3x-ui", "feature/UI-enhance" ]
+    branches: [ "main", "feature/mern-auth",  "feature/UI-enhance", "feature/setting-slide" ]
   pull_request:
-    branches: [ "main", "feature/mern-auth", "feature/3x-ui", "feature/UI-enhance" ]
+    branches: [ "main", "feature/mern-auth",  "feature/UI-enhance", "feature/setting-slide" ]
   workflow_dispatch:
 
 jobs:

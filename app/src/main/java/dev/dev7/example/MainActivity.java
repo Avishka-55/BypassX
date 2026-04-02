@@ -12,8 +12,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.ActivityNotFoundException;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
@@ -33,6 +36,7 @@ import android.widget.LinearLayout;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.FrameLayout;
+import android.widget.CheckBox;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -56,14 +60,17 @@ import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -105,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
     private final Map<String, String> packageConfigs = new HashMap<>();
     private final Map<String, String> splitTunnelApps = new HashMap<>();  // packageKey -> display name
     private final Map<String, String> androidPackageNames = new HashMap<>();  // packageKey -> android package name
+    private final Map<String, String> splitTunnelAvailableApps = new LinkedHashMap<>();  // android package name -> display name
     private String selectedPackageKey;
 
     private SharedPreferences sharedPreferences;
@@ -531,6 +539,8 @@ public class MainActivity extends AppCompatActivity {
     private void initializeAndroidPackageNames() {
         androidPackageNames.put("facebook", "com.facebook.katana");
         androidPackageNames.put("youtube", "com.google.android.youtube");
+        androidPackageNames.put("youtube_revanced", "app.revanced.android.youtube");
+        androidPackageNames.put("zoom", "us.zoom.videomeetings"); // backward compatibility key
         androidPackageNames.put("zoomnormal", "us.zoom.videomeetings");
         androidPackageNames.put("zoomdialog", "us.zoom.videomeetings");
         androidPackageNames.put("whatsapp", "com.whatsapp");
@@ -547,6 +557,7 @@ public class MainActivity extends AppCompatActivity {
     private void setupSplitTunnelPanel() {
         boolean splitTunnelEnabled = sharedPreferences.getBoolean(PREF_SPLIT_TUNNEL_ENABLED, false);
         splitTunnelSwitch.setChecked(splitTunnelEnabled);
+        loadInstalledAppsForSplitTunnel();
         loadSplitTunnelAppsFromPrefs();
         refreshSplitTunnelUi();
 
@@ -558,6 +569,7 @@ public class MainActivity extends AppCompatActivity {
             }
             sharedPreferences.edit().putBoolean(PREF_SPLIT_TUNNEL_ENABLED, isChecked).apply();
             if (isChecked) {
+                loadInstalledAppsForSplitTunnel();
                 refreshSplitTunnelUi();
             } else {
                 splitTunnelApps.clear();
@@ -567,18 +579,84 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void loadInstalledAppsForSplitTunnel() {
+        splitTunnelAvailableApps.clear();
+
+        Intent launchIntent = new Intent(Intent.ACTION_MAIN, null);
+        launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        PackageManager packageManager = getPackageManager();
+        List<ResolveInfo> launchables = packageManager.queryIntentActivities(launchIntent, 0);
+        Map<String, String> byPackage = new HashMap<>();
+
+        for (ResolveInfo info : launchables) {
+            if (info.activityInfo == null) {
+                continue;
+            }
+            String packageName = info.activityInfo.packageName;
+            if (packageName == null || packageName.trim().isEmpty() || packageName.equals(getPackageName())) {
+                continue;
+            }
+            if (byPackage.containsKey(packageName)) {
+                continue;
+            }
+
+            CharSequence labelText = info.loadLabel(packageManager);
+            String appLabel = labelText == null ? packageName : labelText.toString().trim();
+            if (appLabel.isEmpty()) {
+                appLabel = packageName;
+            }
+
+            byPackage.put(packageName, appLabel);
+        }
+
+        List<Map.Entry<String, String>> sortedApps = new ArrayList<>(byPackage.entrySet());
+        Collator collator = Collator.getInstance(Locale.getDefault());
+        collator.setStrength(Collator.PRIMARY);
+        sortedApps.sort((left, right) -> collator.compare(left.getValue(), right.getValue()));
+
+        for (Map.Entry<String, String> app : sortedApps) {
+            splitTunnelAvailableApps.put(app.getKey(), app.getValue());
+            androidPackageNames.put(app.getKey(), app.getKey());
+        }
+    }
+
     private void loadSplitTunnelAppsFromPrefs() {
         String saved = sharedPreferences.getString(PREF_SPLIT_TUNNEL_APPS, "");
         splitTunnelApps.clear();
         if (!saved.isEmpty()) {
             String[] parts = saved.split("\\|");
             for (String part : parts) {
-                String[] kv = part.split(":");
+                String[] kv = part.split(":", 2);
                 if (kv.length == 2) {
-                    splitTunnelApps.put(kv[0], kv[1]);
+                    String packageKey = kv[0].trim();
+                    String displayName = kv[1].trim();
+                    if (packageKey.isEmpty()) {
+                        continue;
+                    }
+
+                    String resolvedPackage = resolveSplitTunnelPackageName(packageKey);
+                    if (resolvedPackage == null || resolvedPackage.isEmpty()) {
+                        continue;
+                    }
+
+                    String resolvedDisplayName = splitTunnelAvailableApps.get(resolvedPackage);
+                    if (resolvedDisplayName == null || resolvedDisplayName.trim().isEmpty()) {
+                        continue;
+                    }
+
+                    splitTunnelApps.put(resolvedPackage, resolvedDisplayName.isEmpty() ? displayName : resolvedDisplayName);
                 }
             }
         }
+    }
+
+    private String resolveSplitTunnelPackageName(String storedKey) {
+        String mapped = androidPackageNames.get(storedKey);
+        if (mapped != null && !mapped.trim().isEmpty()) {
+            return mapped;
+        }
+        return storedKey;
     }
 
     private void saveSplitTunnelAppsToPrefs() {
@@ -598,22 +676,37 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        Map<String, String> availableApps = new LinkedHashMap<>();
-        availableApps.put("youtube", "YouTube");
-        availableApps.put("youtube_revanced", "YouTube Revanced");
-        availableApps.put("zoom", "Zoom");
-        availableApps.put("whatsapp", "WhatsApp");
-        availableApps.put("viber", "Viber");
-        availableApps.put("netflix", "Netflix");
-        availableApps.put("instagram", "Instagram");
-
-        for (Map.Entry<String, String> app : availableApps.entrySet()) {
+        for (Map.Entry<String, String> app : splitTunnelAvailableApps.entrySet()) {
             boolean isSelected = splitTunnelApps.containsKey(app.getKey());
-            android.widget.CheckBox checkBox = new android.widget.CheckBox(this);
+
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            rowParams.bottomMargin = dp(4);
+            row.setLayoutParams(rowParams);
+
+            ImageView appIcon = new ImageView(this);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(20), dp(20));
+            iconParams.setMarginEnd(dp(8));
+            appIcon.setLayoutParams(iconParams);
+            appIcon.setImageDrawable(resolveInstalledAppIcon(app.getKey()));
+
+            CheckBox checkBox = new CheckBox(this);
+            LinearLayout.LayoutParams checkParams = new LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+            );
+            checkBox.setLayoutParams(checkParams);
             checkBox.setText(app.getValue());
             checkBox.setChecked(isSelected);
             checkBox.setEnabled(!isConnectionConfigLocked());
             checkBox.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+            checkBox.setTextSize(14f);
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (isConnectionConfigLocked()) {
                     buttonView.setChecked(splitTunnelApps.containsKey(app.getKey()));
@@ -627,10 +720,21 @@ public class MainActivity extends AppCompatActivity {
                 saveSplitTunnelAppsToPrefs();
                 updateSplitTunnelStatus();
             });
-            splitTunnelAppsContainer.addView(checkBox);
+
+            row.addView(appIcon);
+            row.addView(checkBox);
+            splitTunnelAppsContainer.addView(row);
         }
 
         updateSplitTunnelStatus();
+    }
+
+    private Drawable resolveInstalledAppIcon(String packageName) {
+        try {
+            return getPackageManager().getApplicationIcon(packageName);
+        } catch (Exception ignored) {
+            return ContextCompat.getDrawable(this, R.drawable.ic_pkg_default);
+        }
     }
 
     private void updateSplitTunnelStatus() {
@@ -704,14 +808,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ArrayList<String> getBlockedApplicationsList() {
-        ArrayList<String> blockedApps = new ArrayList<>();
+        Set<String> blockedPackages = new LinkedHashSet<>();
         for (String packageKey : splitTunnelApps.keySet()) {
             String androidPkgName = androidPackageNames.get(packageKey);
-            if (androidPkgName != null) {
-                blockedApps.add(androidPkgName);
+            if (androidPkgName == null || androidPkgName.trim().isEmpty()) {
+                androidPkgName = packageKey;
+            }
+            if (androidPkgName.contains(".")) {
+                blockedPackages.add(androidPkgName);
             }
         }
-        return blockedApps;
+        return new ArrayList<>(blockedPackages);
     }
 
     private void refreshProxyPanelLog() {
