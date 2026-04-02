@@ -126,7 +126,7 @@ public class BypassXTileService extends TileService {
             }
 
             Utilities.copyAssets(this);
-            V2rayConfigs.currentConfig.applicationIcon = R.drawable.ic_launcher;
+            V2rayConfigs.currentConfig.applicationIcon = R.drawable.ic_launcher_app;
             V2rayConfigs.currentConfig.applicationName = getString(R.string.app_name);
 
             if (!Utilities.refillV2rayConfig(selectedPackageKey, startConfig, blockedApps)) {
