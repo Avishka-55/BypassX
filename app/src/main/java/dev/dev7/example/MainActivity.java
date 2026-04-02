@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.ActivityNotFoundException;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.ColorStateList;
@@ -101,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOCAL_PROXY_HOST = "127.0.0.1";
     private static final int LOCAL_SOCKS_PORT = 10808;
     private static final int NETWORK_TIMEOUT_MS = 6000;
+    private static final int UPDATE_TIMEOUT_MS = 10000;
     private static final int AUTH_TIMEOUT_MS = 15000;
     private static final long STATUS_CHECK_INTERVAL_MS = 30000L;
     private static final String CUSTOM_PACKAGE_KEY = "customsni";
@@ -378,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
             if (itemId == R.id.nav_check_update) {
-                Toast.makeText(this, R.string.coming_soon, Toast.LENGTH_SHORT).show();
+                checkForAppUpdate();
                 drawerLayout.closeDrawers();
                 return true;
             }
@@ -441,6 +443,155 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         } catch (ActivityNotFoundException exception) {
             Toast.makeText(this, R.string.privacy_open_failed, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void checkForAppUpdate() {
+        String metadataUrl = resolveUpdateMetadataUrl();
+        if (metadataUrl == null || metadataUrl.isEmpty()) {
+            Toast.makeText(this, R.string.update_url_missing, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        Toast.makeText(this, R.string.update_checking, Toast.LENGTH_SHORT).show();
+        executorService.execute(() -> {
+            UpdateCheckResult result = fetchUpdateCheckResult(metadataUrl);
+            runOnUiThread(() -> handleUpdateCheckResult(result));
+        });
+    }
+
+    private String resolveUpdateMetadataUrl() {
+        String configured = getString(R.string.update_metadata_url);
+        if (configured != null && !configured.trim().isEmpty()) {
+            return configured.trim();
+        }
+
+        String authBase = sanitizeAuthBaseUrl(BuildConfig.AUTH_BASE_URL);
+        if (authBase.isEmpty()) {
+            return null;
+        }
+        return authBase + "/latest.json";
+    }
+
+    private UpdateCheckResult fetchUpdateCheckResult(String metadataUrl) {
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(metadataUrl);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(UPDATE_TIMEOUT_MS);
+            connection.setReadTimeout(UPDATE_TIMEOUT_MS);
+            connection.setRequestProperty("Accept", "application/json");
+
+            int code = connection.getResponseCode();
+            if (code < 200 || code >= 300) {
+                return UpdateCheckResult.error(getString(R.string.update_check_failed));
+            }
+
+            try (InputStream stream = connection.getInputStream()) {
+                String payload = readString(stream);
+                if (payload == null || payload.trim().isEmpty()) {
+                    return UpdateCheckResult.error(getString(R.string.update_invalid_response));
+                }
+
+                JSONObject json = new JSONObject(payload);
+                long remoteVersionCode = json.optLong("versionCode", 0L);
+                String remoteVersionName = json.optString("versionName", "").trim();
+                String downloadUrl = firstNonEmpty(
+                        json.optString("latestUrl", "").trim(),
+                        json.optString("downloadUrl", "").trim()
+                );
+
+                if (remoteVersionCode <= 0 || downloadUrl == null || downloadUrl.trim().isEmpty()) {
+                    return UpdateCheckResult.error(getString(R.string.update_invalid_response));
+                }
+
+                long currentVersionCode = getInstalledVersionCode();
+                String currentVersionName = getInstalledVersionName();
+                boolean hasUpdate = remoteVersionCode > currentVersionCode;
+
+                return UpdateCheckResult.success(
+                        new UpdateInfo(
+                                remoteVersionCode,
+                                remoteVersionName,
+                                downloadUrl,
+                                currentVersionCode,
+                                currentVersionName,
+                                hasUpdate
+                        )
+                );
+            }
+        } catch (Exception ignored) {
+            return UpdateCheckResult.error(getString(R.string.update_check_failed));
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private long getInstalledVersionCode() {
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return packageInfo.getLongVersionCode();
+            }
+            return packageInfo.versionCode;
+        } catch (Exception ignored) {
+            return 0L;
+        }
+    }
+
+    private String getInstalledVersionName() {
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return packageInfo.versionName == null ? "" : packageInfo.versionName.trim();
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private void handleUpdateCheckResult(UpdateCheckResult result) {
+        if (result == null || !result.success || result.info == null) {
+            String message = result == null ? getString(R.string.update_check_failed) : result.errorMessage;
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        UpdateInfo info = result.info;
+        if (!info.hasUpdate) {
+            Toast.makeText(this, R.string.update_no_new_version, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String currentLabel = info.currentVersionName == null || info.currentVersionName.isEmpty()
+                ? String.valueOf(info.currentVersionCode)
+                : info.currentVersionName + " (" + info.currentVersionCode + ")";
+
+        String latestLabel = info.remoteVersionName == null || info.remoteVersionName.isEmpty()
+                ? String.valueOf(info.remoteVersionCode)
+                : info.remoteVersionName + " (" + info.remoteVersionCode + ")";
+
+        String message = getString(R.string.update_available_message, currentLabel, latestLabel);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.update_available_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.update_download_button, (dialog, which) -> openUpdateDownload(info.downloadUrl))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void openUpdateDownload(String downloadUrl) {
+        if (downloadUrl == null || downloadUrl.trim().isEmpty()) {
+            Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl.trim()));
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, R.string.update_download_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1906,6 +2057,49 @@ public class MainActivity extends AppCompatActivity {
 
         private static SubscriptionStatus unavailable() {
             return new SubscriptionStatus(false, 0, 0, false, false);
+        }
+    }
+
+    private static final class UpdateInfo {
+        private final long remoteVersionCode;
+        private final String remoteVersionName;
+        private final String downloadUrl;
+        private final long currentVersionCode;
+        private final String currentVersionName;
+        private final boolean hasUpdate;
+
+        private UpdateInfo(long remoteVersionCode,
+                           String remoteVersionName,
+                           String downloadUrl,
+                           long currentVersionCode,
+                           String currentVersionName,
+                           boolean hasUpdate) {
+            this.remoteVersionCode = remoteVersionCode;
+            this.remoteVersionName = remoteVersionName;
+            this.downloadUrl = downloadUrl;
+            this.currentVersionCode = currentVersionCode;
+            this.currentVersionName = currentVersionName;
+            this.hasUpdate = hasUpdate;
+        }
+    }
+
+    private static final class UpdateCheckResult {
+        private final boolean success;
+        private final String errorMessage;
+        private final UpdateInfo info;
+
+        private UpdateCheckResult(boolean success, String errorMessage, UpdateInfo info) {
+            this.success = success;
+            this.errorMessage = errorMessage;
+            this.info = info;
+        }
+
+        private static UpdateCheckResult success(UpdateInfo info) {
+            return new UpdateCheckResult(true, null, info);
+        }
+
+        private static UpdateCheckResult error(String errorMessage) {
+            return new UpdateCheckResult(false, errorMessage, null);
         }
     }
 

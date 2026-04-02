@@ -67,6 +67,19 @@
     <string name="drawer_close">Close navigation drawer</string>
     <string name="privacy_policy_url">https://bypassx-vpn.netlify.app/#privacy</string>
     <string name="privacy_open_failed">Could not open Privacy Policy.</string>
+    <string name="update_metadata_url">https://panel.avishka.site:8443/bypassx-apk-x7k2p9/latest.json</string>
+    <string name="update_url_missing">Update URL is not configured.</string>
+    <string name="update_checking">Checking for updates...</string>
+    <string name="update_check_failed">Could not check for updates. Try again later.</string>
+    <string name="update_invalid_response">Update server returned invalid data.</string>
+    <string name="update_no_new_version">You already have the latest version.</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_message">Current version: %1$s
+Latest version: %2$s
+
+Do you want to download the update now?</string>
+    <string name="update_download_button">Download</string>
+    <string name="update_download_failed">Could not open download link.</string>
     <string name="share_message">Try BypassX VPN app.</string>
     <string name="logout_success">Logged out successfully.</string>
     <string name="disconnect_vpn_first">First disconnect the VPN.</string>
