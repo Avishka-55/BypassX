@@ -80,6 +80,10 @@ Latest version: %2$s
 Do you want to download the update now?</string>
     <string name="update_download_button">Download</string>
     <string name="update_download_failed">Could not open download link.</string>
+    <string name="update_notification_channel_name">App Updates</string>
+    <string name="update_notification_channel_desc">Notifies when a new BypassX version is available.</string>
+    <string name="update_notification_title">New BypassX update available</string>
+    <string name="update_notification_text">Version %1$s is ready to download. Open app and tap Check for Update.</string>
     <string name="share_message">Try BypassX VPN app.</string>
     <string name="logout_success">Logged out successfully.</string>
     <string name="disconnect_vpn_first">First disconnect the VPN.</string>

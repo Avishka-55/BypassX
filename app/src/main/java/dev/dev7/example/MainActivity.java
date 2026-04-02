@@ -3,9 +3,13 @@ package com.bypassx.app;
 import static dev.dev7.lib.v2ray.utils.V2rayConstants.SERVICE_CONNECTION_STATE_BROADCAST_EXTRA;
 import static dev.dev7.lib.v2ray.utils.V2rayConstants.V2RAY_SERVICE_STATICS_BROADCAST_INTENT;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -39,6 +43,8 @@ import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.core.widget.NestedScrollView;
@@ -96,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_PROXY_TETHERING_ENABLED = "proxy_tethering_enabled";
     private static final String PREF_SPLIT_TUNNEL_ENABLED = "split_tunnel_enabled";
     private static final String PREF_SPLIT_TUNNEL_APPS = "split_tunnel_apps";
+    private static final String PREF_LAST_NOTIFIED_UPDATE_VERSION_CODE = "last_notified_update_version_code";
     private static final String DELAY_TEST_URL_PRIMARY = "https://www.gstatic.com/generate_204";
     private static final String DELAY_TEST_URL_FALLBACK = "https://www.google.com/generate_204";
     private static final String IP_INFO_URL = "https://api.ip.sb/geoip";
@@ -104,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int NETWORK_TIMEOUT_MS = 6000;
     private static final int UPDATE_TIMEOUT_MS = 10000;
     private static final int AUTH_TIMEOUT_MS = 15000;
+    private static final String UPDATE_NOTIFICATION_CHANNEL_ID = "bypassx_update_channel";
+    private static final int UPDATE_NOTIFICATION_ID = 2001;
     private static final long STATUS_CHECK_INTERVAL_MS = 30000L;
     private static final String CUSTOM_PACKAGE_KEY = "customsni";
     private static final Map<String, String> PACKAGE_SNI_BY_KEY = createPackageSniMap();
@@ -431,9 +440,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void shareApp() {
+        String metadataUrl = resolveUpdateMetadataUrl();
+        if (metadataUrl == null || metadataUrl.trim().isEmpty()) {
+            launchShareText(getString(R.string.share_message));
+            return;
+        }
+
+        executorService.execute(() -> {
+            UpdateCheckResult result = fetchUpdateCheckResult(metadataUrl);
+            String fallbackUrl = resolveLatestApkUrl(metadataUrl);
+            String downloadUrl = fallbackUrl;
+            if (result != null && result.success && result.info != null
+                    && result.info.downloadUrl != null && !result.info.downloadUrl.trim().isEmpty()) {
+                downloadUrl = result.info.downloadUrl.trim();
+            }
+
+            String shareText = getString(R.string.share_message) + "\n" + downloadUrl;
+            runOnUiThread(() -> launchShareText(shareText));
+        });
+    }
+
+    private void launchShareText(String text) {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_message));
+        shareIntent.putExtra(Intent.EXTRA_TEXT, text);
         startActivity(Intent.createChooser(shareIntent, getString(R.string.menu_share)));
     }
 
@@ -457,6 +487,27 @@ public class MainActivity extends AppCompatActivity {
         executorService.execute(() -> {
             UpdateCheckResult result = fetchUpdateCheckResult(metadataUrl);
             runOnUiThread(() -> handleUpdateCheckResult(result));
+        });
+    }
+
+    private void checkForAppUpdateInBackground() {
+        String metadataUrl = resolveUpdateMetadataUrl();
+        if (metadataUrl == null || metadataUrl.trim().isEmpty()) {
+            return;
+        }
+
+        executorService.execute(() -> {
+            UpdateCheckResult result = fetchUpdateCheckResult(metadataUrl);
+            if (result == null || !result.success || result.info == null || !result.info.hasUpdate) {
+                return;
+            }
+
+            long lastNotifiedVersionCode = sharedPreferences.getLong(PREF_LAST_NOTIFIED_UPDATE_VERSION_CODE, 0L);
+            if (result.info.remoteVersionCode <= lastNotifiedVersionCode) {
+                return;
+            }
+
+            runOnUiThread(() -> notifyUpdateAvailable(result.info));
         });
     }
 
@@ -564,6 +615,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        sharedPreferences.edit().putLong(PREF_LAST_NOTIFIED_UPDATE_VERSION_CODE, info.remoteVersionCode).apply();
+
         String currentLabel = info.currentVersionName == null || info.currentVersionName.isEmpty()
                 ? String.valueOf(info.currentVersionCode)
                 : info.currentVersionName + " (" + info.currentVersionCode + ")";
@@ -579,6 +632,85 @@ public class MainActivity extends AppCompatActivity {
                 .setPositiveButton(R.string.update_download_button, (dialog, which) -> openUpdateDownload(info.downloadUrl))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    @SuppressLint("MissingPermission")
+    private void notifyUpdateAvailable(UpdateInfo info) {
+        if (info == null || !info.hasUpdate) {
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        createUpdateNotificationChannel();
+
+        Intent tapIntent;
+        if (info.downloadUrl != null && !info.downloadUrl.trim().isEmpty()) {
+            tapIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(info.downloadUrl.trim()));
+            tapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        } else {
+            tapIntent = new Intent(this, MainActivity.class);
+            tapIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        }
+
+        PendingIntent contentIntent = PendingIntent.getActivity(
+            this,
+            (int) (info.remoteVersionCode % Integer.MAX_VALUE),
+            tapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        String versionLabel = info.remoteVersionName == null || info.remoteVersionName.trim().isEmpty()
+                ? String.valueOf(info.remoteVersionCode)
+                : info.remoteVersionName.trim();
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, UPDATE_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_menu_update_bx)
+                .setContentTitle(getString(R.string.update_notification_title))
+                .setContentText(getString(R.string.update_notification_text, versionLabel))
+                .setStyle(new NotificationCompat.BigTextStyle()
+                        .bigText(getString(R.string.update_notification_text, versionLabel)))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+                .setContentIntent(contentIntent);
+
+        NotificationManagerCompat.from(this).notify(UPDATE_NOTIFICATION_ID, builder.build());
+        sharedPreferences.edit().putLong(PREF_LAST_NOTIFIED_UPDATE_VERSION_CODE, info.remoteVersionCode).apply();
+    }
+
+    private void createUpdateNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return;
+        }
+
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager == null) {
+            return;
+        }
+
+        NotificationChannel channel = new NotificationChannel(
+                UPDATE_NOTIFICATION_CHANNEL_ID,
+                getString(R.string.update_notification_channel_name),
+                NotificationManager.IMPORTANCE_DEFAULT
+        );
+        channel.setDescription(getString(R.string.update_notification_channel_desc));
+        manager.createNotificationChannel(channel);
+    }
+
+    private String resolveLatestApkUrl(String metadataUrl) {
+        if (metadataUrl == null || metadataUrl.trim().isEmpty()) {
+            return "";
+        }
+
+        String trimmed = metadataUrl.trim();
+        if (trimmed.endsWith("/latest.json")) {
+            return trimmed.substring(0, trimmed.length() - "/latest.json".length()) + "/latest.apk";
+        }
+        return trimmed;
     }
 
     private void openUpdateDownload(String downloadUrl) {
@@ -2038,6 +2170,7 @@ public class MainActivity extends AppCompatActivity {
         registerV2rayReceiver();
         updateConnectionUi(V2rayController.getConnectionState());
         fetchSubscriptionStatus();
+        checkForAppUpdateInBackground();
     }
 
     private static final class SubscriptionStatus {
