@@ -64,9 +64,6 @@ jobs:
             echo "XUI_SUB_URI=${{ secrets.XUI_SUB_URI }}"
           } > backend-mern-auth-main/.env
 
-      - name: Remove broken launcher PNG for CI
-        run: rm -f app/src/main/res/drawable/ic_launcher.png
-
       - name: Assemble Debug APK
         run: ./gradlew :app:assembleDebug
 

@@ -50,8 +50,19 @@ jobs:
           echo "SUBSCRIPTION_URL=${{ secrets.SUBSCRIPTION_URL }}" > .env
           echo "AUTH_BASE_URL=${{ secrets.AUTH_BASE_URL }}" >> .env
 
-      - name: Remove broken launcher PNG for CI
-        run: rm -f app/src/main/res/drawable/ic_launcher.png
+      - name: Auto bump versionCode for push builds
+        if: startsWith(github.ref, 'refs/heads/')
+        run: |
+          set -euo pipefail
+          CURRENT_VERSION_CODE=$(grep -E 'versionCode\s+[0-9]+' app/build.gradle | head -n1 | sed -E 's/.*versionCode\s+([0-9]+).*/\1/')
+          NEXT_VERSION_CODE=$((100000 + GITHUB_RUN_NUMBER))
+
+          if [ "$NEXT_VERSION_CODE" -le "$CURRENT_VERSION_CODE" ]; then
+            NEXT_VERSION_CODE=$((CURRENT_VERSION_CODE + 1))
+          fi
+
+          sed -Ei "0,/versionCode\s+[0-9]+/s//versionCode ${NEXT_VERSION_CODE}/" app/build.gradle
+          echo "Using release versionCode=${NEXT_VERSION_CODE}"
 
       - name: Assemble release APK
         run: ./gradlew :app:assembleRelease

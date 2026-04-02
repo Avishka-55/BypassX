@@ -48,7 +48,7 @@
                         android:layout_height="64dp"
                         android:layout_gravity="center_horizontal"
                         android:contentDescription="@string/about_logo_desc"
-                        android:src="@drawable/ic_launcher_app" />
+                        android:src="@drawable/ic_launcher" />
 
                     <TextView
                         android:layout_width="match_parent"

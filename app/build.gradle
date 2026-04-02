@@ -24,14 +24,6 @@ android {
     namespace 'com.bypassx.app'
     compileSdk 34
 
-    sourceSets {
-        main {
-            res {
-                exclude 'drawable/ic_launcher.png'
-            }
-        }
-    }
-
     defaultConfig {
         applicationId "com.bypassx.app"
         minSdk 21
