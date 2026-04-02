@@ -2,6 +2,7 @@
 <resources>
     <color name="screen_background">#090F1C</color>
     <color name="card_background">#111A2B</color>
+    <color name="card_background_settings">#162135</color>
     <color name="card_selected_background">#192842</color>
     <color name="text_primary">#F7FBFF</color>
     <color name="text_secondary">#9FB1C8</color>

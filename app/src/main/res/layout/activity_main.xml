@@ -323,7 +323,7 @@
         android:layout_width="320dp"
         android:layout_height="match_parent"
         android:layout_gravity="end"
-        android:background="@color/card_background"
+        android:background="@color/card_background_settings"
         android:orientation="vertical"
         android:padding="0dp">
 
