@@ -16,7 +16,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
-import android.graphics.drawable.Drawable;
 import android.text.InputType;
 import android.net.Uri;
 import android.os.Build;
@@ -36,7 +35,6 @@ import android.widget.LinearLayout;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.FrameLayout;
-import android.widget.CheckBox;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -147,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton proxyHotspotSettingsButton;
     private MaterialButton proxyGuideButton;
     private SwitchMaterial splitTunnelSwitch;
-    private LinearLayout splitTunnelAppsContainer;
+    private MaterialButton splitTunnelChooseAppsButton;
     private TextView splitTunnelStatus;
     private TextView proxyLogText;
     private final Handler proxyPanelHandler = new Handler(Looper.getMainLooper());
@@ -201,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
         proxyGuideButton = findViewById(R.id.proxy_guide_button);
         proxyLogText = findViewById(R.id.proxy_log_text);
         splitTunnelSwitch = findViewById(R.id.split_tunnel_switch);
-        splitTunnelAppsContainer = findViewById(R.id.split_tunnel_apps_container);
+        splitTunnelChooseAppsButton = findViewById(R.id.split_tunnel_choose_apps_button);
         splitTunnelStatus = findViewById(R.id.split_tunnel_status);
 
         initializeAndroidPackageNames();
@@ -559,6 +557,8 @@ public class MainActivity extends AppCompatActivity {
         splitTunnelSwitch.setChecked(splitTunnelEnabled);
         loadInstalledAppsForSplitTunnel();
         loadSplitTunnelAppsFromPrefs();
+
+        splitTunnelChooseAppsButton.setOnClickListener(v -> showSplitTunnelAppPickerDialog());
         refreshSplitTunnelUi();
 
         splitTunnelSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -577,6 +577,51 @@ public class MainActivity extends AppCompatActivity {
                 refreshSplitTunnelUi();
             }
         });
+    }
+
+    private void showSplitTunnelAppPickerDialog() {
+        if (isConnectionConfigLocked()) {
+            Toast.makeText(this, R.string.disconnect_vpn_first, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!splitTunnelSwitch.isChecked()) {
+            Toast.makeText(this, R.string.split_tunnel_enable_first, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        loadInstalledAppsForSplitTunnel();
+        if (splitTunnelAvailableApps.isEmpty()) {
+            Toast.makeText(this, R.string.error_load_packages, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> packageNames = new ArrayList<>(splitTunnelAvailableApps.keySet());
+        String[] labels = new String[packageNames.size()];
+        boolean[] checked = new boolean[packageNames.size()];
+
+        for (int i = 0; i < packageNames.size(); i++) {
+            String packageName = packageNames.get(i);
+            labels[i] = splitTunnelAvailableApps.get(packageName);
+            checked[i] = splitTunnelApps.containsKey(packageName);
+        }
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.split_tunnel_select_apps)
+                .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> checked[which] = isChecked)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    splitTunnelApps.clear();
+                    for (int i = 0; i < packageNames.size(); i++) {
+                        if (checked[i]) {
+                            String packageName = packageNames.get(i);
+                            splitTunnelApps.put(packageName, splitTunnelAvailableApps.get(packageName));
+                        }
+                    }
+                    saveSplitTunnelAppsToPrefs();
+                    updateSplitTunnelStatus();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void loadInstalledAppsForSplitTunnel() {
@@ -669,72 +714,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshSplitTunnelUi() {
-        splitTunnelAppsContainer.removeAllViews();
-
         if (!splitTunnelSwitch.isChecked()) {
+            splitTunnelChooseAppsButton.setEnabled(false);
+            splitTunnelChooseAppsButton.setAlpha(0.55f);
             splitTunnelStatus.setText(R.string.split_tunnel_no_apps);
             return;
         }
 
-        for (Map.Entry<String, String> app : splitTunnelAvailableApps.entrySet()) {
-            boolean isSelected = splitTunnelApps.containsKey(app.getKey());
-
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-            );
-            rowParams.bottomMargin = dp(4);
-            row.setLayoutParams(rowParams);
-
-            ImageView appIcon = new ImageView(this);
-            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(20), dp(20));
-            iconParams.setMarginEnd(dp(8));
-            appIcon.setLayoutParams(iconParams);
-            appIcon.setImageDrawable(resolveInstalledAppIcon(app.getKey()));
-
-            CheckBox checkBox = new CheckBox(this);
-            LinearLayout.LayoutParams checkParams = new LinearLayout.LayoutParams(
-                    0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-            );
-            checkBox.setLayoutParams(checkParams);
-            checkBox.setText(app.getValue());
-            checkBox.setChecked(isSelected);
-            checkBox.setEnabled(!isConnectionConfigLocked());
-            checkBox.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
-            checkBox.setTextSize(14f);
-            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isConnectionConfigLocked()) {
-                    buttonView.setChecked(splitTunnelApps.containsKey(app.getKey()));
-                    return;
-                }
-                if (isChecked) {
-                    splitTunnelApps.put(app.getKey(), app.getValue());
-                } else {
-                    splitTunnelApps.remove(app.getKey());
-                }
-                saveSplitTunnelAppsToPrefs();
-                updateSplitTunnelStatus();
-            });
-
-            row.addView(appIcon);
-            row.addView(checkBox);
-            splitTunnelAppsContainer.addView(row);
-        }
+        splitTunnelChooseAppsButton.setEnabled(!isConnectionConfigLocked());
+        splitTunnelChooseAppsButton.setAlpha(isConnectionConfigLocked() ? 0.55f : 1f);
 
         updateSplitTunnelStatus();
-    }
-
-    private Drawable resolveInstalledAppIcon(String packageName) {
-        try {
-            return getPackageManager().getApplicationIcon(packageName);
-        } catch (Exception ignored) {
-            return ContextCompat.getDrawable(this, R.drawable.ic_pkg_default);
-        }
     }
 
     private void updateSplitTunnelStatus() {

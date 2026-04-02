@@ -152,9 +152,11 @@ BypassX © 2026</string>
     <string name="split_tunnel_title">Split Tunnel</string>
     <string name="split_tunnel_enable">Enable split tunnel</string>
     <string name="split_tunnel_description">Exclude selected apps from VPN (use direct internet)</string>
+    <string name="split_tunnel_choose_apps">Choose apps</string>
     <string name="split_tunnel_select_apps">Select apps to bypass</string>
     <string name="split_tunnel_applied">Split tunnel enabled with %1$d apps excluded</string>
     <string name="split_tunnel_no_apps">No apps selected for bypass</string>
+    <string name="split_tunnel_enable_first">Enable split tunnel first.</string>
     <string name="qs_tile_label">BypassX VPN</string>
     <string name="qs_tile_state_connected">Connected</string>
     <string name="qs_tile_state_connecting">Connecting</string>
