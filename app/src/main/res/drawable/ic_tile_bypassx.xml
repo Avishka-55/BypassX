@@ -13,22 +13,13 @@
         android:fillColor="@android:color/transparent"
         android:pathData="M12,2 L4,6 L4,12 C4,16.4 7.4,20.5 12,22 C16.6,20.5 20,16.4 20,12 L20,6 Z" />
 
-    <!-- X inside shield - left chevron > -->
+    <!-- Lightning bolt -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:fillColor="@android:color/transparent"
-        android:pathData="M8,8 L11.5,12 L8,16" />
-
-    <!-- X inside shield - right chevron < -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="@android:color/transparent"
-        android:pathData="M16,8 L12.5,12 L16,16" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M13.5,7 L10,13 L12.5,13 L10.5,17 L15,11 L12.5,11 Z" />
 
 </vector>
