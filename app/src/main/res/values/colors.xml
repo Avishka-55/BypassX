@@ -28,6 +28,8 @@
     <color name="connect_connecting">#F9A73A</color>
     <color name="connect_connected">#29B25E</color>
 
+    <color name="torrent_highlight_color">#FF5252</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 </resources>

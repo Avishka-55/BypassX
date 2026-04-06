@@ -1,6 +1,7 @@
 package com.bypassx.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -59,6 +60,13 @@ public class AuthActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Check if disclaimer has been accepted
+        if (!isDisclaimerAccepted()) {
+            startActivity(new Intent(this, DisclaimerActivity.class));
+            finish();
+            return;
+        }
+
         if (AuthSessionManager.hasSession(this)) {
             openMainAndFinish();
             return;
@@ -70,6 +78,11 @@ public class AuthActivity extends AppCompatActivity {
         bindViews();
         setupListeners();
         updateModeUi();
+    }
+
+    private boolean isDisclaimerAccepted() {
+        SharedPreferences prefs = getSharedPreferences("bypassx_prefs", MODE_PRIVATE);
+        return prefs.getBoolean("disclaimer_accepted", false);
     }
 
     private void bindViews() {
