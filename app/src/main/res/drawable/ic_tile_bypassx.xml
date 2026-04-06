@@ -4,40 +4,31 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
 
-    <!-- Left chevron > -->
+    <!-- Shield outline -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
+        android:strokeWidth="1.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="@android:color/transparent"
-        android:pathData="M3,3 L9.5,12 L3,21" />
+        android:pathData="M12,2 L4,6 L4,12 C4,16.4 7.4,20.5 12,22 C16.6,20.5 20,16.4 20,12 L20,6 Z" />
 
-    <!-- Right chevron < -->
+    <!-- X inside shield - left chevron > -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
+        android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="@android:color/transparent"
-        android:pathData="M21,3 L14.5,12 L21,21" />
+        android:pathData="M8,8 L11.5,12 L8,16" />
 
-    <!-- Inner left chevron > (smaller, makes the X shape) -->
+    <!-- X inside shield - right chevron < -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
+        android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="@android:color/transparent"
-        android:pathData="M8,3 L14.5,12 L8,21" />
-
-    <!-- Inner right chevron < (smaller) -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:fillColor="@android:color/transparent"
-        android:pathData="M16,3 L9.5,12 L16,21" />
+        android:pathData="M16,8 L12.5,12 L16,16" />
 
 </vector>
