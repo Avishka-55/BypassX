@@ -26,25 +26,22 @@ public class DisclaimerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Check if disclaimer was already accepted
         if (isDisclaimerAccepted()) {
+            openAuthAndFinish();
             finish();
             return;
         }
 
         setContentView(R.layout.activity_disclaimer);
 
-        // Bind views
         torrentCheckbox = findViewById(R.id.disclaimer_agree_torrent_checkbox);
         privacyCheckbox = findViewById(R.id.disclaimer_agree_privacy_checkbox);
         enterButton = findViewById(R.id.disclaimer_enter_button);
         privacyLinkButton = findViewById(R.id.disclaimer_privacy_link_button);
 
-        // Setup checkbox listeners
         torrentCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> updateButtonState());
         privacyCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> updateButtonState());
 
-        // Setup button listeners
         enterButton.setOnClickListener(v -> {
             if (torrentCheckbox.isChecked() && privacyCheckbox.isChecked()) {
                 acceptDisclaimer();
@@ -54,8 +51,12 @@ public class DisclaimerActivity extends AppCompatActivity {
         });
 
         privacyLinkButton.setOnClickListener(v -> openPrivacyPolicy());
+        updateButtonState();
+    }
 
-        // Initialize button state
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
         updateButtonState();
     }
 
@@ -71,8 +72,14 @@ public class DisclaimerActivity extends AppCompatActivity {
                 .putBoolean(PREF_DISCLAIMER_ACCEPTED, true)
                 .apply();
 
-        // Finish this activity - AuthActivity or MainActivity will handle next step
+        openAuthAndFinish();
         finish();
+    }
+
+    private void openAuthAndFinish() {
+        Intent intent = new Intent(this, AuthActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     private void openPrivacyPolicy() {
@@ -80,7 +87,7 @@ public class DisclaimerActivity extends AppCompatActivity {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL));
             startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(this, "Could not open privacy policy.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.privacy_open_failed, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -91,7 +98,6 @@ public class DisclaimerActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        // Prevent back button from closing the app without accepting
-        Toast.makeText(this, "You must accept the terms to use BypassX", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, R.string.disclaimer_must_accept_message, Toast.LENGTH_SHORT).show();
     }
 }

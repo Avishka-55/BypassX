@@ -219,14 +219,15 @@ BypassX © 2026</string>
 
     <!-- Disclaimer Screen Strings -->
     <string name="disclaimer_title">User Agreement &amp; Terms</string>
-    <string name="disclaimer_subtitle">Please read and accept the following terms before using BypassX</string>
+    <string name="disclaimer_subtitle">Please review and accept these terms before continuing</string>
     <string name="disclaimer_torrent_title">Torrenting is Prohibited</string>
-    <string name="disclaimer_torrent_message">Downloading torrents through this service is strictly prohibited. Violation of this policy will result in permanent account deactivation and potential legal action. Use of BypassX for torrenting or piracy is not permitted under any circumstances.</string>
+    <string name="disclaimer_torrent_message">Downloading torrents through this service is strictly prohibited. Violation of this policy will result in permanent account deactivation. Use of BypassX for torrenting or piracy is not permitted under any circumstances.</string>
     <string name="disclaimer_privacy_title">Privacy Policy</string>
     <string name="disclaimer_privacy_message">You must accept our privacy policy to use this application.</string>
     <string name="disclaimer_privacy_link">Read Policy</string>
-    <string name="disclaimer_agree_torrent">I understand torrenting is prohibited and accept permanent account disablement as consequence</string>
+    <string name="disclaimer_agree_torrent">I understand torrenting is prohibited and may permanently disable my account</string>
     <string name="disclaimer_agree_privacy">I agree to the privacy policy and terms of service</string>
-    <string name="disclaimer_enter_button">Enter App</string>
-    <string name="disclaimer_button_hint">Check both boxes to continue</string>
+    <string name="disclaimer_enter_button">Next</string>
+    <string name="disclaimer_button_hint">Select both checkboxes to continue</string>
+    <string name="disclaimer_must_accept_message">You must accept both conditions to use BypassX.</string>
 </resources>

@@ -1,234 +1,181 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@drawable/bg_main_gradient"
-    android:padding="16dp">
+    android:padding="12dp">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center">
+    <LinearLayout
+        android:id="@+id/disclaimer_footer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_panel_glass"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/disclaimer_enter_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:text="@string/disclaimer_enter_button"
+            android:textSize="15sp"
+            app:cornerRadius="8dp" />
+
+        <TextView
+            android:id="@+id/disclaimer_button_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:alpha="0.65"
+            android:gravity="center"
+            android:paddingTop="8dp"
+            android:text="@string/disclaimer_button_hint"
+            android:textColor="?attr/colorOnBackground"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/disclaimer_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/disclaimer_footer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:orientation="vertical"
             android:background="@drawable/bg_panel_glass"
-            android:padding="24dp"
-            android:layout_marginHorizontal="16dp">
+            android:orientation="vertical"
+            android:padding="14dp">
 
-            <!-- Header -->
             <TextView
                 android:id="@+id/disclaimer_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/disclaimer_title"
-                android:textSize="22sp"
-                android:textStyle="bold"
                 android:textColor="?attr/colorOnBackground"
-                android:paddingBottom="8dp" />
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/disclaimer_subtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:alpha="0.72"
+                android:paddingTop="6dp"
                 android:text="@string/disclaimer_subtitle"
-                android:textSize="13sp"
                 android:textColor="?attr/colorOnBackground"
-                android:alpha="0.7"
-                android:paddingBottom="16dp" />
+                android:textSize="13sp" />
 
-            <!-- Scroll view for long content -->
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:fadeScrollbars="false">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- Torrenting Prohibition Section -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp"
-                        android:background="@drawable/bg_stat_chip"
-                        android:layout_marginBottom="16dp"
-                        android:layout_marginTop="8dp">
-
-                        <TextView
-                            android:id="@+id/torrent_warning_icon"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="⚠️"
-                            android:textSize="28sp"
-                            android:paddingBottom="8dp"
-                            android:alpha="0.8" />
-
-                        <TextView
-                            android:id="@+id/disclaimer_torrent_title"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/disclaimer_torrent_title"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/torrent_highlight_color"
-                            android:paddingBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/disclaimer_torrent_message"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/disclaimer_torrent_message"
-                            android:textSize="13sp"
-                            android:textColor="?attr/colorOnBackground"
-                            android:lineSpacingExtra="4dp" />
-
-                    </LinearLayout>
-
-                    <!-- Privacy Policy Section -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:id="@+id/disclaimer_privacy_title"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/disclaimer_privacy_title"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="?attr/colorOnBackground"
-                            android:paddingBottom="4dp" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:id="@+id/disclaimer_privacy_message"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/disclaimer_privacy_message"
-                                android:textSize="13sp"
-                                android:textColor="?attr/colorOnBackground"
-                                android:lineSpacingExtra="4dp" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/disclaimer_privacy_link_button"
-                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:text="@string/disclaimer_privacy_link"
-                                android:textSize="11sp"
-                                android:paddingHorizontal="8dp"
-                                android:paddingVertical="4dp"
-                                app:cornerRadius="4dp" />
-
-                        </LinearLayout>
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-            </ScrollView>
-
-            <!-- Checkboxes -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_stat_chip"
                 android:orientation="vertical"
-                android:layout_marginBottom="16dp">
+                android:padding="10dp">
 
-                <!-- Torrent Agreement Checkbox -->
-                <LinearLayout
+                <TextView
+                    android:id="@+id/disclaimer_torrent_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingVertical="8dp">
+                    android:text="@string/disclaimer_torrent_title"
+                    android:textColor="@color/torrent_highlight_color"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-                    <com.google.android.material.checkbox.MaterialCheckBox
-                        android:id="@+id/disclaimer_agree_torrent_checkbox"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/disclaimer_agree_torrent"
-                        android:textSize="13sp"
-                        android:textColor="?attr/colorOnBackground" />
-
-                </LinearLayout>
-
-                <!-- Privacy Policy Agreement Checkbox -->
-                <LinearLayout
+                <TextView
+                    android:id="@+id/disclaimer_torrent_message"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingVertical="8dp">
-
-                    <com.google.android.material.checkbox.MaterialCheckBox
-                        android:id="@+id/disclaimer_agree_privacy_checkbox"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/disclaimer_agree_privacy"
-                        android:textSize="13sp"
-                        android:textColor="?attr/colorOnBackground" />
-
-                </LinearLayout>
-
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/disclaimer_torrent_message"
+                    android:textColor="?attr/colorOnBackground"
+                    android:textSize="13sp" />
             </LinearLayout>
 
-            <!-- Button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/disclaimer_enter_button"
+            <TextView
+                android:id="@+id/disclaimer_privacy_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/disclaimer_enter_button"
-                android:textSize="15sp"
-                android:enabled="false"
-                android:alpha="0.5"
-                app:cornerRadius="8dp"
-                android:paddingVertical="12dp" />
+                android:layout_marginTop="12dp"
+                android:text="@string/disclaimer_privacy_title"
+                android:textColor="?attr/colorOnBackground"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/disclaimer_button_hint"
+                android:id="@+id/disclaimer_privacy_message"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/disclaimer_button_hint"
-                android:textSize="11sp"
+                android:layout_marginTop="4dp"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/disclaimer_privacy_message"
                 android:textColor="?attr/colorOnBackground"
-                android:alpha="0.6"
-                android:gravity="center"
-                android:paddingTop="8dp" />
+                android:textSize="13sp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/disclaimer_privacy_link_button"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/disclaimer_privacy_link"
+                android:textSize="12sp"
+                app:cornerRadius="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/disclaimer_agree_torrent_checkbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="-2dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/disclaimer_agree_torrent"
+                    android:textColor="?attr/colorOnBackground"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/disclaimer_agree_privacy_checkbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="-2dp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/disclaimer_agree_privacy"
+                    android:textColor="?attr/colorOnBackground"
+                    android:textSize="13sp" />
+            </LinearLayout>
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-    </FrameLayout>
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
