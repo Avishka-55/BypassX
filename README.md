@@ -101,6 +101,11 @@ SUBSCRIPTION_URL=https://example.com/sub.txt
 AUTH_BASE_URL=https://your-auth-backend.example.com
 ADMIN_PIN=2468
 APP_PIN=1994
+ANDROID_KEYSTORE_BASE64=
+ANDROID_KEYSTORE_PASSWORD=
+ANDROID_KEY_ALIAS=
+ANDROID_KEY_PASSWORD= 
+
 ```
 
 ### `backend-mern-auth-main/.env`
@@ -121,10 +126,21 @@ XUI_DEFAULT_QUOTA_GB=10
 XUI_DEFAULT_EXPIRY_DAYS=10
 XUI_SUB_PATH=/sub/
 XUI_SUB_URI=
-
+SUBSCRIPTION_URL=
 BACKEND_PUBLIC_URL=https://your-public-backend.example.com
 NODE_ENV=production
 ```
+Variable
+```
+DO_APK_BASE_URL
+DO_APK_PATH
+DO_DEPLOY_PATH
+DO_HOST
+DO_SSH_PORT
+DO_SYSTEMD_SERVICE
+DO_USER
+```
+
 
 Notes:
 
