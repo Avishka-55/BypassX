@@ -49,6 +49,19 @@ High-level flow:
 - Proxy Tethering mode and panel.
 - Quick Settings tile support.
 
+## Release / Update Distribution
+
+- A separate release workflow exists in `.github/workflows/release.yml`.
+- Release builds are signed and uploaded to your DigitalOcean instance path.
+- APK files are named with version info: `bypassx-v${versionName}-${versionCode}.apk`.
+- The release pipeline also writes `latest.json` and `latest.apk` for in-app updates.
+- The server keeps only the latest 3 APK versions to preserve storage.
+- The release workflow auto-increments versionCode for push builds so app updates are detected correctly.
+- The app automatically checks `latest.json` for newer versionCode and shows one notification per new version.
+- Tapping the update notification opens the APK download URL directly.
+- The drawer Share action now shares the latest APK download link instead of only text.
+- Ping now displays the remote country/location label instead of raw IP.
+
 ## App Screenshots
 
 <p align="center">
@@ -136,11 +149,14 @@ npm start
 
 ## CI/CD
 
-GitHub Actions workflow builds Android and writes both root and backend `.env` files from repository secrets.
+This project uses two GitHub workflows:
 
-Primary workflow file:
+- `.github/workflows/android-build.yml` for testing/debug builds.
+- `.github/workflows/release.yml` for release APK creation, signing, and upload.
 
-- `.github/workflows/android-build.yml`
+The release workflow also uploads built APKs to your DigitalOcean droplet using repository variables such as `DO_HOST`, `DO_USER`, `DO_SSH_PORT`, `DO_APK_PATH`, and `DO_APK_BASE_URL`.
+
+Release APK filenames are versioned and the latest metadata is published to `latest.json` for app-side update checking.
 
 ## Troubleshooting
 
