@@ -107,6 +107,16 @@ ANDROID_KEY_ALIAS=
 ANDROID_KEY_PASSWORD= 
 
 ```
+Environment Variable
+```
+DO_APK_BASE_URL
+DO_APK_PATH
+DO_DEPLOY_PATH
+DO_HOST
+DO_SSH_PORT
+DO_SYSTEMD_SERVICE
+DO_USER
+```
 
 ### `backend-mern-auth-main/.env`
 
@@ -130,16 +140,9 @@ SUBSCRIPTION_URL=
 BACKEND_PUBLIC_URL=https://your-public-backend.example.com
 NODE_ENV=production
 ```
-Variable
-```
-DO_APK_BASE_URL
-DO_APK_PATH
-DO_DEPLOY_PATH
-DO_HOST
-DO_SSH_PORT
-DO_SYSTEMD_SERVICE
-DO_USER
-```
+Note:
+- If you use github CI/CD for build the apk then those backend .env should be included in `BACKEND_ENV_FILE`
+
 
 
 Notes:
