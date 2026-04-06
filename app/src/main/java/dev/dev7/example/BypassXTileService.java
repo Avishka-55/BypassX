@@ -126,7 +126,7 @@ public class BypassXTileService extends TileService {
             }
 
             Utilities.copyAssets(this);
-            V2rayConfigs.currentConfig.applicationIcon = R.drawable.ic_launcher;
+            V2rayConfigs.currentConfig.applicationIcon = R.drawable.ic_tile_bypassx;
             V2rayConfigs.currentConfig.applicationName = getString(R.string.app_name);
 
             if (!Utilities.refillV2rayConfig(selectedPackageKey, startConfig, blockedApps)) {
@@ -202,7 +202,7 @@ public class BypassXTileService extends TileService {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            tile.setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_vpn));
+            tile.setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_tile_bypassx));
         }
 
         switch (state) {

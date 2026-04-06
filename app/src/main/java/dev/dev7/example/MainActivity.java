@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        V2rayController.init(this, R.drawable.ic_launcher, getString(R.string.app_name));
+        V2rayController.init(this, R.drawable.ic_tile_bypassx, getString(R.string.app_name));
         sharedPreferences = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
         executorService = Executors.newSingleThreadExecutor();
 
