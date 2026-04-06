@@ -92,43 +92,48 @@ Also available:
 
 ## Environment Configuration
 
-No server-specific values are hardcoded for XUI provisioning; backend behavior is driven by env values.
+No server-specific values are hardcoded for XUI provisioning; backend and CI behavior are driven by environment variables.
 
-### Root `.env` (Android build-time)
+### 1) Root `.env` (Android build-time)
+
+Used by `app/build.gradle` to populate `BuildConfig` fields:
 
 ```env
 SUBSCRIPTION_URL=https://example.com/sub.txt
 AUTH_BASE_URL=https://your-auth-backend.example.com
+
+# Optional legacy values (currently not read by app code)
 ADMIN_PIN=2468
 APP_PIN=1994
-ANDROID_KEYSTORE_BASE64=
-ANDROID_KEYSTORE_PASSWORD=
-ANDROID_KEY_ALIAS=
-ANDROID_KEY_PASSWORD= 
-
-```
-Environment Variable
-```
-DO_APK_BASE_URL
-DO_APK_PATH
-DO_DEPLOY_PATH
-DO_HOST
-DO_SSH_PORT
-DO_SYSTEMD_SERVICE
-DO_USER
 ```
 
-### `backend-mern-auth-main/.env`
+### 2) `backend-mern-auth-main/.env` (Backend runtime)
 
 ```env
+# Core
 PORT=4000
-MONGODB_URL=mongodb+srv://...
-JWT_SECRET=...
-BREVO_API_KEY=...
-SENDER_EMAIL=...
-ADMIN_APPROVAL_EMAIL=...
+NODE_ENV=production
+JWT_SECRET=replace-with-strong-random-secret
 
-XUI_PANEL_URL=https://panel.example.com:PORT/PANELPATH
+# Database
+MONGODB_URL=mongodb+srv://...
+MONGODB_DB_NAME=mern-auth
+
+# API/CORS
+CORS_ORIGINS=http://localhost:5173,https://your-frontend.example.com
+BACKEND_PUBLIC_URL=https://your-public-backend.example.com
+
+# Email (required for OTP + approval mails)
+BREVO_API_KEY=...
+SENDER_EMAIL=noreply@example.com
+ADMIN_APPROVAL_EMAIL=admin@example.com
+
+# SMTP transport (used by nodemailer config)
+SMTP_USER=...
+SMTP_PASS=...
+
+# 3x-ui integration
+XUI_PANEL_URL=https://panel.example.com:2053/panel
 XUI_USERNAME=...
 XUI_PASSWORD=...
 XUI_INBOUND_ID=1
@@ -136,19 +141,65 @@ XUI_DEFAULT_QUOTA_GB=10
 XUI_DEFAULT_EXPIRY_DAYS=10
 XUI_SUB_PATH=/sub/
 XUI_SUB_URI=
-SUBSCRIPTION_URL=
-BACKEND_PUBLIC_URL=https://your-public-backend.example.com
-NODE_ENV=production
+
+# Optional legacy aliases for compatibility with some setups
+3X_UI_URL=
+3X_UI_USERNAME=
+3X_UI_PASSWORD=
+3X_UI_INBOUND_ID=
 ```
-Note:
-- If you use github CI/CD for build the apk then those backend .env should be included in `BACKEND_ENV_FILE`
-
-
 
 Notes:
-
-- `XUI_SUB_URI` can be left empty. If set, it overrides generated subscription base URL.
+- `XUI_SUB_URI` can be left empty. If set, it overrides the generated subscription base URL.
 - Ensure subscription port/path is reachable from mobile clients (firewall/UFW/CDN rules).
+
+### 3) GitHub Actions secrets and variables
+
+If you use CI/CD workflows, configure the following.
+
+GitHub Secrets:
+
+```text
+SUBSCRIPTION_URL
+AUTH_BASE_URL
+
+ANDROID_KEYSTORE_BASE64
+ANDROID_KEYSTORE_PASSWORD
+ANDROID_KEY_ALIAS
+ANDROID_KEY_PASSWORD
+
+DO_SSH_PRIVATE_KEY
+BACKEND_ENV_FILE
+
+# Used directly in android-build.yml for backend env generation
+JWT_SECRET
+MONGODB_URL
+BREVO_API_KEY
+SENDER_EMAIL
+ADMIN_APPROVAL_EMAIL
+XUI_PANEL_URL
+XUI_USERNAME
+XUI_PASSWORD
+XUI_INBOUND_ID
+XUI_DEFAULT_QUOTA_GB
+XUI_DEFAULT_EXPIRY_DAYS
+XUI_SUB_PATH
+XUI_SUB_URI
+```
+
+GitHub Repository Variables:
+
+```text
+DO_HOST
+DO_USER
+DO_SSH_PORT
+DO_DEPLOY_PATH
+DO_SYSTEMD_SERVICE
+DO_APK_PATH
+DO_APK_BASE_URL
+```
+
+For backend deployment via `.github/workflows/deploy-backend-do.yml`, put the full backend `.env` content inside `BACKEND_ENV_FILE`.
 
 ## Build and Run
 
