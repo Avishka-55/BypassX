@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - feature/3x-ui
-      - feature/setting-slide
+      - test
     paths:
       - "backend-mern-auth-main/**"
       - ".github/workflows/deploy-backend-do.yml"

@@ -16,6 +16,11 @@ const subUriOverride = process.env.XUI_SUB_URI || '';
 
 const ONE_GB_BYTES = 1024 * 1024 * 1024;
 
+const parseNonNegativeNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+};
+
 const normalizeSubPath = (pathValue) => {
   if (!pathValue) {
     return '/sub/';
@@ -223,7 +228,21 @@ class XuiApiClient {
       throw new Error(json.msg || '3x-ui getClientTraffics failed');
     }
 
-    return json.obj || null;
+    const traffic = json.obj || null;
+    if (!traffic) {
+      return null;
+    }
+
+    const total = parseNonNegativeNumber(traffic.total, 0);
+    const periodUsed = parseNonNegativeNumber(traffic.up, 0) + parseNonNegativeNumber(traffic.down, 0);
+    const remaining = total > 0 ? Math.max(0, total - periodUsed) : 0;
+
+    return {
+      ...traffic,
+      remaining,
+      remainingBytes: remaining,
+      periodUsed,
+    };
   }
 }
 

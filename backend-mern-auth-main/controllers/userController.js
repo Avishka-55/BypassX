@@ -47,6 +47,7 @@ export const getSubscriptionStatus = async (req, res) => {
 
         let totalBytes = parseNonNegative(user.quotaBytes, 0);
         let usedBytes = 0;
+        let allTimeUsedBytes = 0;
         let expiryAt = normalizeExpiryMs(user.xuiExpiryAt, 0);
 
         if (user.xuiClientEmail && isXuiConfigured()) {
@@ -57,13 +58,10 @@ export const getSubscriptionStatus = async (req, res) => {
                         totalBytes = parseNonNegative(traffic.total, totalBytes);
                     }
 
-                    if (traffic.allTime !== undefined && traffic.allTime !== null && traffic.allTime !== '') {
-                        usedBytes = parseNonNegative(traffic.allTime, usedBytes);
-                    } else {
-                        const up = parseNonNegative(traffic.up, 0);
-                        const down = parseNonNegative(traffic.down, 0);
-                        usedBytes = up + down;
-                    }
+                    const up = parseNonNegative(traffic.up, 0);
+                    const down = parseNonNegative(traffic.down, 0);
+                    usedBytes = up + down;
+                    allTimeUsedBytes = parseNonNegative(traffic.allTime, usedBytes);
 
                     if (traffic.expiryTime !== undefined && traffic.expiryTime !== null && traffic.expiryTime !== '') {
                         expiryAt = normalizeExpiryMs(traffic.expiryTime, expiryAt);
@@ -89,7 +87,9 @@ export const getSubscriptionStatus = async (req, res) => {
             subscription: {
                 totalBytes,
                 usedBytes,
+                allTimeUsedBytes,
                 remainingBytes,
+                remaining: remainingBytes,
                 expiryAt,
                 unlimited,
                 isExpired,
