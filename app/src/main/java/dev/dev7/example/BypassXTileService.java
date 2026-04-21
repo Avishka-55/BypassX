@@ -9,6 +9,7 @@ import static dev.dev7.lib.v2ray.utils.V2rayConstants.V2RAY_SERVICE_STATICS_BROA
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -46,6 +47,16 @@ public class BypassXTileService extends TileService {
     private BroadcastReceiver stateReceiver;
     private boolean isReceiverRegistered;
     private V2rayConstants.CONNECTION_STATES lastKnownState = V2rayConstants.CONNECTION_STATES.DISCONNECTED;
+
+    public static void requestTileSync(Context context) {
+        if (context == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return;
+        }
+        try {
+            requestListeningState(context, new ComponentName(context, BypassXTileService.class));
+        } catch (Exception ignored) {
+        }
+    }
 
     @Override
     public void onCreate() {
