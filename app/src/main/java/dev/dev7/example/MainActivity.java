@@ -2132,6 +2132,8 @@ public class MainActivity extends AppCompatActivity {
                 && previousState != V2rayConstants.CONNECTION_STATES.CONNECTED) {
                 validateAccountStatus(true);
             }
+
+            BypassXTileService.requestTileSync(this);
     }
 
     @Override

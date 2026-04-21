@@ -24,6 +24,16 @@
         <activity
             android:name="com.bypassx.app.MainActivity"
             android:exported="false" />
+        <activity-alias
+            android:name="com.bypassx.app.QsTilePreferencesActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:targetActivity="com.bypassx.app.MainActivity">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
         <activity
             android:name="com.bypassx.app.DisclaimerActivity"
             android:exported="false" />
